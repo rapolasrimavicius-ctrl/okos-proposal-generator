@@ -480,10 +480,7 @@
           <input type="text" id="projectCode" placeholder="e.g. YYC_TC-CAM_ACC">
         </div>
       </div>
-      <div class="form-group">
-        <label>PROJECT NAME</label>
-        <input type="text" id="projectName" placeholder="e.g. Camera & Access Control System">
-      </div>
+
       <div class="form-group">
         <label>FACILITY NAME</label>
         <input type="text" id="facilityName" placeholder="e.g. The Lanesborough Condos">
@@ -503,7 +500,21 @@
         </div>
       </div>
 
-      <!-- OKOS SCOPE -->
+      <!-- AI CONTENT -->
+      <div class="section-label">AI-Assisted Content</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <span style="font-size:13px;color:var(--muted);line-height:1.5;">Auto-generates Executive and Project Overviews from your BOM scope items.<br>Import your BOM first, then click generate.</span>
+        <button class="btn btn-primary" id="genAllBtn" onclick="generateWithGemini('both')" style="white-space:nowrap;flex-shrink:0;margin-left:16px;">✦ Auto-generate Overviews</button>
+      </div>
+      <div id="geminiStatus" style="font-size:12px;color:var(--muted);margin-bottom:12px;display:none;"></div>
+      <div class="form-group">
+        <label>EXECUTIVE OVERVIEW <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
+        <textarea id="execOverview" rows="5" placeholder="Click '✦ Auto-generate Overviews' above, or type manually..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>PROJECT OVERVIEW <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
+        <textarea id="projectOverview" rows="5" placeholder="Click '✦ Auto-generate Overviews' above, or type manually..."></textarea>
+      </div>
       <div class="section-label">Okos Scope of Work</div>
       <div id="okosScope"></div>
       <button class="btn btn-outline btn-sm" onclick="addScope('okos')" style="margin-top:4px;">+ Add Item</button>
@@ -608,6 +619,16 @@
       <div class="panel-title">Generate Proposal</div>
       <div class="panel-sub">Review the checklist, then generate and download your DOCX.</div>
 
+      <div class="section-label">Gemini API Key</div>
+      <div class="form-group" style="margin-bottom:4px;">
+        <label>GEMINI API KEY <span style="color:var(--muted);font-weight:400;">— required for AI-generated overviews · <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--teal);">Get a free key →</a></span></label>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="geminiApiKey" placeholder="AIza..." style="flex:1;" oninput="saveApiKey(this.value)">
+          <button class="btn btn-outline btn-sm" onclick="toggleKeyVis()" id="keyVisBtn" style="flex-shrink:0;">Show</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:20px;">Key is saved in your browser only — never sent anywhere except Google's API.</div>
+
       <div class="section-label">Readiness Check</div>
       <ul class="checklist" id="checklist"></ul>
 
@@ -647,16 +668,160 @@ let okosScopeCount = 0, clientScopeCount = 0, assumptionCount = 0;
 let okosMatCount = 0, clientMatCount = 0;
 let generatedDocx = null;
 
-
-
 // ═══════════════════════════════════════════════
+// GEMINI API
+// ═══════════════════════════════════════════════
+function saveApiKey(val) {
+  try { localStorage.setItem('okos_gemini_key', val); } catch(e) {}
+}
+
+const OKOS_GEMINI_KEY = 'AIzaSyDvHyDjlVBCf-PTCys4VFa510b7OpLis28';
+
+function loadApiKey() {
+  try {
+    const saved = localStorage.getItem('okos_gemini_key') || OKOS_GEMINI_KEY;
+    if (saved) {
+      const el = document.getElementById('geminiApiKey');
+      if (el) el.value = saved;
+    }
+  } catch(e) {
+    const el = document.getElementById('geminiApiKey');
+    if (el) el.value = OKOS_GEMINI_KEY;
+  }
+}
+
+function toggleKeyVis() {
+  const el = document.getElementById('geminiApiKey');
+  const btn = document.getElementById('keyVisBtn');
+  if (!el) return;
+  if (el.type === 'password') { el.type = 'text'; btn.textContent = 'Hide'; }
+  else { el.type = 'password'; btn.textContent = 'Show'; }
+}
+
+async function generateWithGemini(type) {
+  const apiKey = document.getElementById('geminiApiKey')?.value?.trim()
+    || (()=>{ try { return localStorage.getItem('okos_gemini_key') || OKOS_GEMINI_KEY; } catch(e){ return OKOS_GEMINI_KEY; }})();
+
+  if (!apiKey) {
+    showToast('No Gemini API key found', 'error');
+    return;
+  }
+
+  const clientName  = document.getElementById('clientName')?.value?.trim() || '[Client]';
+  const projectCode = document.getElementById('projectCode')?.value?.trim() || '';
+  const projectLoc  = document.getElementById('projectLocation')?.value?.trim() || '';
+  const facilityName= document.getElementById('facilityName')?.value?.trim() || '';
+
+  const okosScope = [], clientScope = [], assumps = [], materials = [];
+  for (let i = 1; i <= okosScopeCount; i++) {
+    const el = document.getElementById(`okos-scope-text-${i}`);
+    if (el?.closest('.scope-row') && el.value.trim()) okosScope.push(el.value.trim());
+  }
+  for (let i = 1; i <= clientScopeCount; i++) {
+    const el = document.getElementById(`client-scope-text-${i}`);
+    if (el?.closest('.scope-row') && el.value.trim()) clientScope.push(el.value.trim());
+  }
+  for (let i = 1; i <= assumptionCount; i++) {
+    const el = document.getElementById(`assumption-scope-text-${i}`);
+    if (el?.closest('.scope-row') && el.value.trim()) assumps.push(el.value.trim());
+  }
+  for (let i = 1; i <= okosMatCount; i++) {
+    const desc = document.getElementById(`okos-mat-desc-${i}`);
+    const spec = document.getElementById(`okos-mat-spec-${i}`);
+    if (desc?.closest('.mat-row') && desc.value.trim()) {
+      materials.push(spec?.value?.trim() ? `${desc.value.trim()} (${spec.value.trim()})` : desc.value.trim());
+    }
+  }
+
+  const contextBlock = `Client: ${clientName}
+Project Code: ${projectCode}
+Facility: ${facilityName || projectLoc}
+Location: ${projectLoc}
+Okos Scope of Work:
+${okosScope.map((s,i) => `  ${i+1}. ${s}`).join('\n') || '  (not specified)'}
+${clientScope.length ? `Client Responsibilities:\n${clientScope.map(s=>`  - ${s}`).join('\n')}` : ''}
+${assumps.length ? `Assumptions:\n${assumps.map(s=>`  - ${s}`).join('\n')}` : ''}
+${materials.length ? `Key Materials/Equipment:\n${materials.slice(0,8).map(s=>`  - ${s}`).join('\n')}` : ''}`;
+
+  const execPrompt = `You are writing an Executive Overview for a professional technical proposal from Okos Inc., a North American physical security deployment company founded in 2019.
+
+${contextBlock}
+
+Write 2-3 concise professional paragraphs. The overview should:
+- Open by stating Okos is pleased to submit this proposal, referencing the specific scope
+- Briefly describe the client's need or challenge this engagement addresses
+- Close with a confident statement about Okos's ability to deliver on time and to standard
+
+Write in third person. Be specific to the project. Do not use bullet points. Do not include a heading. Output only the paragraphs, nothing else.`;
+
+  const projectPrompt = `You are writing a Project Overview for a professional technical proposal from Okos Inc., a North American physical security deployment company.
+
+${contextBlock}
+
+Write 2-3 concise professional paragraphs. The overview should:
+- Describe the existing site conditions and the specific technical challenge or gap being addressed
+- Explain what the proposed scope of work will deliver and why each element is necessary
+- Describe the overall solution approach at a high level, referencing key equipment or methodology where relevant
+
+Write in third person. Be specific and technical. Do not use bullet points. Do not include a heading. Output only the paragraphs, nothing else.`;
+
+  const btn = document.getElementById('genAllBtn');
+  const statusEl = document.getElementById('geminiStatus');
+  btn.disabled = true;
+  btn.textContent = '...generating';
+  statusEl.style.display = 'block';
+  statusEl.style.color = 'var(--muted)';
+
+  const callGemini = async (prompt) => {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.4, maxOutputTokens: 600 }
+        })
+      }
+    );
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!text) throw new Error('Empty response from Gemini');
+    return text.trim();
+  };
+
+  try {
+    statusEl.textContent = 'Generating Executive Overview...';
+    const execText = await callGemini(execPrompt);
+    document.getElementById('execOverview').value = execText;
+
+    statusEl.textContent = 'Generating Project Overview...';
+    const projectText = await callGemini(projectPrompt);
+    document.getElementById('projectOverview').value = projectText;
+
+    statusEl.textContent = '\u2713 Both overviews generated \u2014 review and edit as needed';
+    statusEl.style.color = 'var(--teal)';
+    showToast('Overviews generated successfully', 'success');
+  } catch(err) {
+    statusEl.textContent = '\u2717 Error: ' + err.message;
+    statusEl.style.color = 'var(--error)';
+    showToast('Gemini error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '\u2726 Auto-generate Overviews';
+  }
+}
+
+// Load saved API key on page load
+window.addEventListener('DOMContentLoaded', loadApiKey);
 // NAVIGATION
 // ═══════════════════════════════════════════════
 function goTo(step) {
   document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i === step));
   document.querySelectorAll('.step-item').forEach((s,i) => s.classList.toggle('active', i === step));
   currentStep = step;
-  if (step === 3) buildChecklist();
+  if (step === 3) { loadApiKey(); buildChecklist(); }
   window.scrollTo(0, 0);
 }
 
@@ -767,7 +932,7 @@ function handleBomFile(file) {
           if (/project code/.test(cell) && val(row,j)) { setIfEmpty('projectCode', val(row,j)); filled.push('Project Code'); }
           if (/project address/.test(cell) && val(row,j)) { setIfEmpty('projectLocation', val(row,j)); filled.push('Address'); }
           if (/facility name/.test(cell) && val(row,j)) { setIfEmpty('facilityName', val(row,j)); filled.push('Facility Name'); }
-          if (/^project name/.test(cell) && val(row,j) && val(row,j) !== 'No information in Monday Board') { setIfEmpty('projectName', val(row,j)); filled.push('Project Name'); }
+
           if (/^client$/.test(cell) && val(row,j) && val(row,j) !== 'No information in Monday Board') { setIfEmpty('clientName', val(row,j)); filled.push('Client'); }
           if (/^date$/.test(cell) || cell === 'date:') {
             const raw = row[j+1] || row[j+2];
@@ -851,11 +1016,87 @@ function handleBomFile(file) {
         status.style.display = 'block';
       }
       updateTotal();
+
+      // ── Extract embedded images from all sheets ──
+      extractBomImages(e.target.result, wb.SheetNames);
+
     } catch(err) {
       showToast('Could not parse file: ' + err.message, 'error');
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+async function extractBomImages(arrayBuffer, sheetNames) {
+  const MIN_SIZE = 50 * 1024; // ignore anything under 50KB (icons, markers)
+  try {
+    const zip = await JSZip.loadAsync(arrayBuffer);
+
+    // Build a map of drawing relationships: sheet index → [media filenames]
+    // xl/worksheets/sheet1.xml → xl/drawings/drawing1.xml → xl/drawings/_rels/drawing1.xml.rels → xl/media/imageN.xxx
+    const sheetImageMap = {}; // sheetIndex → Set of media paths
+
+    for (let si = 0; si < sheetNames.length; si++) {
+      const sheetRelsPath = `xl/worksheets/_rels/sheet${si+1}.xml.rels`;
+      const relsFile = zip.file(sheetRelsPath);
+      if (!relsFile) continue;
+
+      const relsXml = await relsFile.async('string');
+      const drawingMatch = relsXml.match(/Target="\.\.\/drawings\/(drawing\d+\.xml)"/);
+      if (!drawingMatch) continue;
+
+      const drawingName = drawingMatch[1];
+      const drawingRelsPath = `xl/drawings/_rels/${drawingName}.rels`;
+      const drawingRelsFile = zip.file(drawingRelsPath);
+      if (!drawingRelsFile) continue;
+
+      const drawingRelsXml = await drawingRelsFile.async('string');
+      const mediaMatches = [...drawingRelsXml.matchAll(/Target="\.\.\/media\/([^"]+)"/g)];
+      if (!mediaMatches.length) continue;
+
+      sheetImageMap[si] = mediaMatches.map(m => `xl/media/${m[1]}`);
+    }
+
+    // For each sheet that has images, find the largest one above threshold
+    let extractedCount = 0;
+    for (const [siStr, mediaPaths] of Object.entries(sheetImageMap)) {
+      const si = parseInt(siStr);
+      const sheetName = sheetNames[si];
+
+      // Get sizes and filter
+      const candidates = [];
+      for (const mediaPath of mediaPaths) {
+        const f = zip.file(mediaPath);
+        if (!f) continue;
+        const buf = await f.async('arraybuffer');
+        if (buf.byteLength >= MIN_SIZE) {
+          candidates.push({ mediaPath, buf, size: buf.byteLength });
+        }
+      }
+
+      if (!candidates.length) continue;
+
+      // Take the largest image from this sheet
+      candidates.sort((a, b) => b.size - a.size);
+      const { mediaPath, buf } = candidates[0];
+      const ext = mediaPath.split('.').pop().toLowerCase();
+      const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
+      const blob = new Blob([buf], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+
+      drawings.push({ name: sheetName, dataUrl: url, arrayBuffer: buf, type: mimeType });
+      extractedCount++;
+    }
+
+    if (extractedCount > 0) {
+      renderDrawings();
+      const status = document.getElementById('bomImportStatus');
+      status.innerHTML += `<br><span class="status-chip ok">✓ Auto-extracted ${extractedCount} drawing${extractedCount > 1 ? 's' : ''} from BOM sheets</span>`;
+      showToast(`${extractedCount} drawing${extractedCount > 1 ? 's' : ''} extracted from BOM`, 'success');
+    }
+  } catch(err) {
+    console.warn('Image extraction failed:', err);
+  }
 }
 
 function setIfEmpty(id, val) {
@@ -948,7 +1189,7 @@ function collectData() {
   return {
     clientName:    v('clientName'),
     projectCode:   v('projectCode'),
-    projectName:   v('projectName'),
+    projectName:   v('projectCode'),
     projectLocation: v('projectLocation'),
     facilityName:  v('facilityName'),
     date:          v('proposalDate') || new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'}),
@@ -960,6 +1201,8 @@ function collectData() {
     lift:          v('lift') || 'Not Required',
     bulky:         v('bulky') || 'Not Required',
     notes:         v('additionalNotes'),
+    execOverview:  v('execOverview'),
+    projectOverview: v('projectOverview'),
     drawings,
   };
 }
@@ -969,13 +1212,18 @@ function collectData() {
 // ═══════════════════════════════════════════════
 function buildChecklist() {
   const d = collectData();
+  const hasApiKey = !!(document.getElementById('geminiApiKey')?.value?.trim() ||
+    (()=>{ try { return localStorage.getItem('okos_gemini_key'); } catch(e){ return ''; }})());
   const items = [
-    { label: 'Client name',        ok: !!d.clientName,    val: d.clientName || 'Missing' },
-    { label: 'Project code',       ok: !!d.projectCode,   val: d.projectCode || 'Missing' },
-    { label: 'Project location',   ok: !!d.projectLocation, val: d.projectLocation ? 'Set' : 'Missing' },
-    { label: 'Okos scope items',   ok: d.okosScope.length > 0, val: d.okosScope.length + ' items', warn: d.okosScope.length === 0 },
-    { label: 'Okos materials',     ok: d.okosMats.length > 0,  val: d.okosMats.length + ' items',  warn: d.okosMats.length === 0 },
-    { label: 'System drawings',    ok: d.drawings.length > 0,  val: d.drawings.length + ' uploaded', warn: true },
+    { label: 'Client name',          ok: !!d.clientName,          val: d.clientName || 'Missing' },
+    { label: 'Project code',         ok: !!d.projectCode,         val: d.projectCode || 'Missing' },
+    { label: 'Project location',     ok: !!d.projectLocation,     val: d.projectLocation ? 'Set' : 'Missing' },
+    { label: 'Executive overview',   ok: !!d.execOverview,        val: d.execOverview ? 'Written' : 'Not set', warn: true },
+    { label: 'Project overview',     ok: !!d.projectOverview,     val: d.projectOverview ? 'Written' : 'Not set', warn: true },
+    { label: 'Okos scope items',     ok: d.okosScope.length > 0,  val: d.okosScope.length + ' items', warn: d.okosScope.length === 0 },
+    { label: 'Okos materials',       ok: d.okosMats.length > 0,   val: d.okosMats.length + ' items',  warn: d.okosMats.length === 0 },
+    { label: 'System drawings',      ok: d.drawings.length > 0,   val: d.drawings.length + ' uploaded', warn: true },
+    { label: 'Gemini API key',       ok: hasApiKey,               val: hasApiKey ? 'Saved' : 'Not set — AI generation unavailable', warn: true },
   ];
   const cl = document.getElementById('checklist');
   cl.innerHTML = items.map(item => `
@@ -1223,7 +1471,6 @@ ${rels.join('\n')}
   // Cover fields table
   const coverFields = [
     ['Client',             data.clientName],
-    ['Project Name',       data.projectName || data.projectCode],
     ['Project Code',       data.projectCode],
     ['Project Location(s)',data.projectLocation],
     ['Date',               data.date],
@@ -1255,6 +1502,28 @@ ${rels.join('\n')}
   </w:sectPr></w:pPr></w:p>`;
 
   // ── BODY SECTIONS ──
+
+  // ── EXECUTIVE OVERVIEW (if provided) ──
+  if (data.execOverview) {
+    body += emptyP(280);
+    body += sectionHeading('Executive Overview');
+    body += emptyP(80);
+    data.execOverview.split('\n\n').filter(s => s.trim()).forEach(para => {
+      body += p(para.trim(), {size:20, color:'2D3748', after:160});
+    });
+    body += pageBreak();
+  }
+
+  // ── PROJECT OVERVIEW (if provided) ──
+  if (data.projectOverview) {
+    body += emptyP(280);
+    body += sectionHeading('Project Overview');
+    body += emptyP(80);
+    data.projectOverview.split('\n\n').filter(s => s.trim()).forEach(para => {
+      body += p(para.trim(), {size:20, color:'2D3748', after:160});
+    });
+    body += pageBreak();
+  }
 
   // ── ABOUT OKOS ──
   body += emptyP(280);
