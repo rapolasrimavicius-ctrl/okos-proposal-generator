@@ -504,16 +504,32 @@
       <div class="section-label">AI-Assisted Content</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <span style="font-size:13px;color:var(--muted);line-height:1.5;">Auto-generates Executive and Project Overviews from your BOM scope items.<br>Import your BOM first, then click generate.</span>
-        <button class="btn btn-primary" id="genAllBtn" onclick="generateWithGemini('both')" style="white-space:nowrap;flex-shrink:0;margin-left:16px;">✦ Auto-generate Overviews</button>
+        <button class="btn btn-primary" id="genAllBtn" onclick="generateWithGemini('both')" style="white-space:nowrap;flex-shrink:0;margin-left:16px;">✦ Auto-generate All Sections</button>
       </div>
       <div id="geminiStatus" style="font-size:12px;color:var(--muted);margin-bottom:12px;display:none;"></div>
       <div class="form-group">
         <label>EXECUTIVE OVERVIEW <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
-        <textarea id="execOverview" rows="5" placeholder="Click '✦ Auto-generate Overviews' above, or type manually..."></textarea>
+        <textarea id="execOverview" rows="5" placeholder="Click '✦ Auto-generate All Sections' above, or type manually..."></textarea>
       </div>
       <div class="form-group">
         <label>PROJECT OVERVIEW <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
-        <textarea id="projectOverview" rows="5" placeholder="Click '✦ Auto-generate Overviews' above, or type manually..."></textarea>
+        <textarea id="projectOverview" rows="5" placeholder="Click '✦ Auto-generate All Sections' above, or type manually..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>SYSTEM ARCHITECTURE OVERVIEW <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
+        <textarea id="sysArch" rows="4" placeholder="Click '✦ Auto-generate All Sections' above, or type manually..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>TECHNICAL CONSIDERATIONS <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
+        <textarea id="techConsiderations" rows="4" placeholder="Click '✦ Auto-generate All Sections' above, or type manually..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>DEPENDENCIES & CLIENT RESPONSIBILITIES <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
+        <textarea id="aiDependencies" rows="4" placeholder="Click '✦ Auto-generate All Sections' above, or type manually..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>CONCLUSION <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
+        <textarea id="aiConclusion" rows="4" placeholder="Click '✦ Auto-generate All Sections' above, or type manually..."></textarea>
       </div>
       <div class="section-label">Okos Scope of Work</div>
       <div id="okosScope"></div>
@@ -623,7 +639,7 @@
       <div class="form-group" style="margin-bottom:4px;">
         <label>GEMINI API KEY <span style="color:var(--muted);font-weight:400;">— required for AI-generated overviews · <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--teal);">Get a free key →</a></span></label>
         <div style="display:flex;gap:8px;">
-          <input type="password" id="geminiApiKey" placeholder="AIza..." style="flex:1;" oninput="saveApiKey(this.value)">
+          <input type="password" id="geminiApiKey" placeholder="AIza..." style="flex:1;">
           <button class="btn btn-outline btn-sm" onclick="toggleKeyVis()" id="keyVisBtn" style="flex-shrink:0;">Show</button>
         </div>
       </div>
@@ -675,19 +691,13 @@ function saveApiKey(val) {
   try { localStorage.setItem('okos_gemini_key', val); } catch(e) {}
 }
 
-const OKOS_GEMINI_KEY = 'AIzaSyDvHyDjlVBCf-PTCys4VFa510b7OpLis28';
+const OKOS_GEMINI_KEY = 'AIzaSyA59KL3QwKa1ZmSxbaJn__eVHqgZYlDbKg';
 
 function loadApiKey() {
   try {
-    const saved = localStorage.getItem('okos_gemini_key') || OKOS_GEMINI_KEY;
-    if (saved) {
-      const el = document.getElementById('geminiApiKey');
-      if (el) el.value = saved;
-    }
-  } catch(e) {
     const el = document.getElementById('geminiApiKey');
     if (el) el.value = OKOS_GEMINI_KEY;
-  }
+  } catch(e) {}
 }
 
 function toggleKeyVis() {
@@ -699,8 +709,7 @@ function toggleKeyVis() {
 }
 
 async function generateWithGemini(type) {
-  const apiKey = document.getElementById('geminiApiKey')?.value?.trim()
-    || (()=>{ try { return localStorage.getItem('okos_gemini_key') || OKOS_GEMINI_KEY; } catch(e){ return OKOS_GEMINI_KEY; }})();
+  const apiKey = document.getElementById('geminiApiKey')?.value?.trim() || OKOS_GEMINI_KEY;
 
   if (!apiKey) {
     showToast('No Gemini API key found', 'error');
@@ -747,23 +756,22 @@ ${materials.length ? `Key Materials/Equipment:\n${materials.slice(0,8).map(s=>` 
 
 ${contextBlock}
 
-Write 2-3 concise professional paragraphs. The overview should:
-- Open by stating Okos is pleased to submit this proposal, referencing the specific scope
-- Briefly describe the client's need or challenge this engagement addresses
-- Close with a confident statement about Okos's ability to deliver on time and to standard
+Write exactly 2 polished professional paragraphs, maximum 130 words total. Requirements:
+- Paragraph 1: Open with "Okos Inc. is pleased to submit this proposal to [client name] for [specific scope description]." Then in 1-2 sentences describe what the engagement entails at the specific facility/location and what it will achieve for the client.
+- Paragraph 2: Affirm Okos's relevant experience and capability, and close with a confident commitment to deliver on time and to the highest professional standards.
 
-Write in third person. Be specific to the project. Do not use bullet points. Do not include a heading. Output only the paragraphs, nothing else.`;
+If the client name is not provided or shows as "[Client]", omit the client name entirely and just reference the project code and location.
+Do not list individual equipment items. Write strictly in third person throughout — never use "we", "our", or "us". Do not use bullet points. Do not include a heading. Output only the two paragraphs, nothing else.`;
 
   const projectPrompt = `You are writing a Project Overview for a professional technical proposal from Okos Inc., a North American physical security deployment company.
 
 ${contextBlock}
 
-Write 2-3 concise professional paragraphs. The overview should:
-- Describe the existing site conditions and the specific technical challenge or gap being addressed
-- Explain what the proposed scope of work will deliver and why each element is necessary
-- Describe the overall solution approach at a high level, referencing key equipment or methodology where relevant
+Write exactly 2 polished professional paragraphs, maximum 160 words total. Requirements:
+- Paragraph 1: Describe the existing site conditions and the specific technical challenge or gap this engagement addresses. Be specific about the facility, location, and what is missing or needs improvement. Do not reference Okos — focus on the client's situation.
+- Paragraph 2: Describe Okos's proposed solution approach at a high level — what will be deployed, how it addresses the challenge, and what outcome it delivers. Reference the general type of equipment and methodology but do not enumerate every line item.
 
-Write in third person. Be specific and technical. Do not use bullet points. Do not include a heading. Output only the paragraphs, nothing else.`;
+Write in third person. Be specific and technical but accessible. Do not use bullet points. Do not include a heading. Output only the two paragraphs, nothing else.`;
 
   const btn = document.getElementById('genAllBtn');
   const statusEl = document.getElementById('geminiStatus');
@@ -774,13 +782,13 @@ Write in third person. Be specific and technical. Do not use bullet points. Do n
 
   const callGemini = async (prompt) => {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 600 }
+          generationConfig: { temperature: 0.4, maxOutputTokens: 2048 }
         })
       }
     );
@@ -791,25 +799,91 @@ Write in third person. Be specific and technical. Do not use bullet points. Do n
     return text.trim();
   };
 
+  const sysArchPrompt = `You are writing a System Architecture Overview section for a professional technical proposal from Okos Inc., a physical security deployment company.
+
+${contextBlock}
+
+First, determine the primary type of engagement based on the scope and materials above. It will be one of: CCTV/camera installation, access control installation, network/fibre infrastructure, or a hybrid of these.
+
+Then write exactly 2 short professional paragraphs, maximum 140 words total, describing the system architecture appropriate for that engagement type:
+- For CCTV: focus on camera placement logic, coverage zones, recording infrastructure, and network/storage approach
+- For access control: focus on door controller topology, credential management, access levels, and integration with building systems
+- For network/fibre infrastructure: focus on network topology, how locations connect, data flow, and how the backbone supports the security systems
+- For hybrid: address the primary systems and how they integrate
+
+Write in third person. Be specific to this project — reference locations, equipment types, or system components mentioned in the scope. Do not use bullet points. Do not include a heading. Output only the two paragraphs, nothing else.`;
+
+  const techPrompt = `You are writing a Technical Considerations section for a professional technical proposal from Okos Inc.
+
+${contextBlock}
+
+First, determine the primary type of engagement: CCTV/camera installation, access control, network/fibre infrastructure, or hybrid.
+
+Write exactly 2 short professional paragraphs, maximum 130 words total:
+- For CCTV: address PoE budget, cable length compliance, camera field-of-view design, and storage/bandwidth sizing
+- For access control: address power supply sizing for door hardware, fail-safe/fail-secure requirements, fire alarm integration, and code compliance (NEC, CSA, NFPA)
+- For network/fibre infrastructure: address signal loss budgets, transceiver selection for run distances, fibre type compatibility, and future bandwidth headroom
+- For hybrid: address the most critical technical constraints across the systems involved
+
+Paragraph 1 should cover the key technical design decisions. Paragraph 2 should address scalability, maintainability, or compliance considerations.
+
+Write in third person. Do not use bullet points. Do not include a heading. Output only the two paragraphs, nothing else.`;
+
+  const depsPrompt = `You are writing a Dependencies & Client Responsibilities section for a professional technical proposal from Okos Inc.
+
+${contextBlock}
+
+Write exactly 2 short professional paragraphs, maximum 120 words total. The section should:
+- Paragraph 1: State that successful implementation depends on the client fulfilling certain prerequisites, and describe what those are based on the scope and assumptions listed above
+- Paragraph 2: Note that any site conditions that differ from the stated assumptions will result in a revised scope and cost estimate
+
+Write in third person. Do not use bullet points. Do not include a heading. Output only the two paragraphs, nothing else.`;
+
+  const conclusionPrompt = `You are writing a Conclusion for a professional technical proposal from Okos Inc.
+
+${contextBlock}
+
+Write exactly 2 short professional paragraphs, maximum 120 words total. The conclusion should:
+- Paragraph 1: Summarize what this proposal delivers and how it addresses the client's need — reference the client name, facility, and scope in general terms
+- Paragraph 2: Affirm Okos's commitment to delivering on time and to the highest standards, and note that the solution provides a foundation for future expansion
+
+Write strictly in third person — never use we, our, or us. Do not use bullet points. Do not include a heading. Output only the two paragraphs, nothing else.`;
+
   try {
-    statusEl.textContent = 'Generating Executive Overview...';
+    statusEl.textContent = 'Generating Executive Overview... (1/6)';
     const execText = await callGemini(execPrompt);
     document.getElementById('execOverview').value = execText;
 
-    statusEl.textContent = 'Generating Project Overview...';
+    statusEl.textContent = 'Generating Project Overview... (2/6)';
     const projectText = await callGemini(projectPrompt);
     document.getElementById('projectOverview').value = projectText;
 
-    statusEl.textContent = '\u2713 Both overviews generated \u2014 review and edit as needed';
+    statusEl.textContent = 'Generating System Architecture... (3/6)';
+    const sysArchText = await callGemini(sysArchPrompt);
+    document.getElementById('sysArch').value = sysArchText;
+
+    statusEl.textContent = 'Generating Technical Considerations... (4/6)';
+    const techText = await callGemini(techPrompt);
+    document.getElementById('techConsiderations').value = techText;
+
+    statusEl.textContent = 'Generating Dependencies... (5/6)';
+    const depsText = await callGemini(depsPrompt);
+    document.getElementById('aiDependencies').value = depsText;
+
+    statusEl.textContent = 'Generating Conclusion... (6/6)';
+    const conclusionText = await callGemini(conclusionPrompt);
+    document.getElementById('aiConclusion').value = conclusionText;
+
+    statusEl.textContent = '\u2713 All 6 sections generated \u2014 review and edit as needed';
     statusEl.style.color = 'var(--teal)';
-    showToast('Overviews generated successfully', 'success');
+    showToast('All sections generated successfully', 'success');
   } catch(err) {
     statusEl.textContent = '\u2717 Error: ' + err.message;
     statusEl.style.color = 'var(--error)';
     showToast('Gemini error: ' + err.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = '\u2726 Auto-generate Overviews';
+    btn.textContent = '\u2726 Auto-generate All Sections';
   }
 }
 
@@ -882,6 +956,7 @@ function addMat(type, data = {}) {
       ${priceField}
       <input type="text" placeholder="Notes" id="${type}-mat-notes-${id}" value="${esc(data.notes||'')}">
       <input type="url" placeholder="Ref URL" id="${type}-mat-url-${id}" value="${esc(data.url||'')}">
+      <input type="hidden" id="${type}-mat-loc-${id}" value="${esc(data.location||'')}">
       <button class="btn btn-danger btn-sm" onclick="this.closest('.mat-row').remove();updateTotal()">×</button>
     `;
     div.style.gridTemplateColumns = '1fr 1.6fr 60px 60px 80px 1fr 1fr auto';
@@ -950,6 +1025,7 @@ function handleBomFile(file) {
 
       // Scope items
       let inOkos = false, inClient = false, inAssump = false, inOkosMat = false, inClientMat = false;
+      let currentMatLocation = '';
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         const _r = (v) => (v===null||v===undefined||v==='null'||v==='undefined') ? '' : String(v).trim();
@@ -978,27 +1054,36 @@ function handleBomFile(file) {
         if (inClient && _isDataRow(scopeText)) { addScope('client', scopeText); filled.includes('Client scope')||filled.push('Client scope'); }
         if (inAssump && _isDataRow(scopeText)) { addScope('assumption', scopeText); filled.includes('Assumptions')||filled.push('Assumptions'); }
 
-        // Material rows
+        // Material rows — detect location sub-headers within Okos materials
         if (inOkosMat) {
-          const desc = String(row[2]||'').trim();
-          const spec = String(row[3]||'').trim();
+          const make = String(row[2]||'').trim();
+          const descRaw = String(row[3]||'').trim();
+          // Col2 = Make/Model, Col3 = Description — use description as primary, make as spec
+          const desc = descRaw || make;
+          const spec = descRaw ? make : '';
           const qty  = String(row[4]||'').trim();
           const unit = String(row[5]||'').trim();
           const msrp = String(row[6]||'').trim();
-          const notes= String(row[7]||'').trim();
+          const notes= String(row[8]||'').trim();
           const urlVal = row.find(c => String(c||'').startsWith('http'));
-          const price = row[9] || row[6];
-          if (desc && !/^material desc/i.test(desc)) {
-            addMat('okos', { desc, spec, qty, unit, price: !isNaN(parseFloat(price)) ? parseFloat(price).toFixed(2) : msrp, notes, url: urlVal||'' });
+          const price = row[6];
+          // Detect location headers: rows where col2 has text but col3,4,5 are all empty
+          const isLocationHeader = desc && !spec && !qty && !unit && !msrp && !/^material desc/i.test(desc) && !/^s\/n/i.test(desc) && isNaN(parseFloat(String(row[1]||'').trim()));
+          if (isLocationHeader) {
+            currentMatLocation = desc;
+          } else if (desc && !/^material desc/i.test(desc) && !/^material detail/i.test(desc) && !/^description$/i.test(desc)) {
+            addMat('okos', { desc, spec, qty, unit, price: !isNaN(parseFloat(price)) ? parseFloat(price).toFixed(2) : msrp, notes, url: urlVal||'', location: currentMatLocation });
             filled.includes('Okos materials')||filled.push('Okos materials');
           }
         }
         if (inClientMat) {
-          const desc = String(row[2]||'').trim();
-          const spec = String(row[3]||'').trim();
+          const make = String(row[2]||'').trim();
+          const descRaw = String(row[3]||'').trim();
+          const desc = descRaw || make;
+          const spec = descRaw ? make : '';
           const qty  = String(row[4]||'').trim();
           const unit = String(row[5]||'').trim();
-          if (desc && !/^material desc/i.test(desc) && !/^s\/n/i.test(desc)) {
+          if (desc && !/^material desc/i.test(desc) && !/^material detail/i.test(desc) && !/^description$/i.test(desc) && !/^s\/n/i.test(desc)) {
             addMat('client', { desc, spec, qty, unit });
             filled.includes('Client materials')||filled.push('Client materials');
           }
@@ -1016,6 +1101,60 @@ function handleBomFile(file) {
         status.style.display = 'block';
       }
       updateTotal();
+
+      // ── Parse BOM per Location sheet if present ──
+      const bomLocSheetName = wb.SheetNames.find(n => /bom.*loc|loc.*bom/i.test(n));
+      if (bomLocSheetName) {
+        const locWs = wb.Sheets[bomLocSheetName];
+        const locRows = XLSX.utils.sheet_to_json(locWs, {header:1, defval:null, raw:false});
+        let currentLoc = '';
+        let locMatCount = 0;
+        // Store location breakdown separately — main BOM table is preserved
+        window._locBomData = [];  // [{loc, desc, spec, make, model, qty, unit}]
+
+        locRows.forEach(row => {
+          const _s = (v) => (v === null || v === undefined) ? '' : String(v).trim();
+          const colA = _s(row[0]);
+          const colB = _s(row[1]);
+          const colC = _s(row[2]);
+          const colD = _s(row[3]);
+          const colE = _s(row[4]);
+          const colF = _s(row[5]);
+          const colG = _s(row[6]);
+
+          // Skip header rows
+          if (/^sl\.?\s*no/i.test(colA) || /^sl\.?\s*no/i.test(colB)) return;
+          // Skip empty rows
+          if (!colA && !colB) return;
+
+          // Location header: col A has text, col B is empty
+          if (colA && !colB) {
+            currentLoc = colA;
+            return;
+          }
+
+          // Data row: col B has item description
+          if (colB && !/^item desc/i.test(colB)) {
+            const qty = colF ? String(parseFloat(colF) || colF) : '';
+            window._locBomData.push({
+              loc: currentLoc,
+              desc: colB,
+              spec: colC,
+              make: colD,
+              model: colE,
+              qty: qty,
+              unit: colG
+            });
+            locMatCount++;
+          }
+        });
+
+        if (locMatCount > 0) {
+          filled.includes('Okos materials (by location)') || filled.push('Okos materials (by location)');
+        }
+      } else {
+        window._locBomData = [];
+      }
 
       // ── Extract embedded images from all sheets ──
       extractBomImages(e.target.result, wb.SheetNames);
@@ -1201,8 +1340,13 @@ function collectData() {
     lift:          v('lift') || 'Not Required',
     bulky:         v('bulky') || 'Not Required',
     notes:         v('additionalNotes'),
-    execOverview:  v('execOverview'),
+    execOverview:    v('execOverview'),
     projectOverview: v('projectOverview'),
+    sysArch:         v('sysArch'),
+    techConsiderations: v('techConsiderations'),
+    aiDependencies:  v('aiDependencies'),
+    aiConclusion:    v('aiConclusion'),
+    locBomData:      window._locBomData || [],
     drawings,
   };
 }
@@ -1218,8 +1362,12 @@ function buildChecklist() {
     { label: 'Client name',          ok: !!d.clientName,          val: d.clientName || 'Missing' },
     { label: 'Project code',         ok: !!d.projectCode,         val: d.projectCode || 'Missing' },
     { label: 'Project location',     ok: !!d.projectLocation,     val: d.projectLocation ? 'Set' : 'Missing' },
-    { label: 'Executive overview',   ok: !!d.execOverview,        val: d.execOverview ? 'Written' : 'Not set', warn: true },
-    { label: 'Project overview',     ok: !!d.projectOverview,     val: d.projectOverview ? 'Written' : 'Not set', warn: true },
+    { label: 'Executive overview',      ok: !!d.execOverview,          val: d.execOverview ? 'Written' : 'Not set', warn: true },
+    { label: 'Project overview',         ok: !!d.projectOverview,       val: d.projectOverview ? 'Written' : 'Not set', warn: true },
+    { label: 'System architecture',      ok: !!d.sysArch,               val: d.sysArch ? 'Written' : 'Using default', warn: true },
+    { label: 'Technical considerations', ok: !!d.techConsiderations,    val: d.techConsiderations ? 'Written' : 'Using default', warn: true },
+    { label: 'Dependencies',             ok: !!d.aiDependencies,        val: d.aiDependencies ? 'Written' : 'Using default', warn: true },
+    { label: 'Conclusion',               ok: !!d.aiConclusion,          val: d.aiConclusion ? 'Written' : 'Using default', warn: true },
     { label: 'Okos scope items',     ok: d.okosScope.length > 0,  val: d.okosScope.length + ' items', warn: d.okosScope.length === 0 },
     { label: 'Okos materials',       ok: d.okosMats.length > 0,   val: d.okosMats.length + ' items',  warn: d.okosMats.length === 0 },
     { label: 'System drawings',      ok: d.drawings.length > 0,   val: d.drawings.length + ' uploaded', warn: true },
@@ -1460,7 +1608,7 @@ ${rels.join('\n')}
   // Subtitle
   body += `<w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr>
     <w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="24"/><w:szCs w:val="24"/><w:color w:val="33BBA5"/></w:rPr>
-    <w:t>Physical Security System Design &amp; Deployment</w:t></w:r></w:p>`;
+    <w:t xml:space="preserve">${esc(data.projectCode || 'Physical Security System Design & Deployment')}</w:t></w:r></w:p>`;
   body += logoSpacerBot;
 
   body += `</w:tc></w:tr></w:tbl>`;
@@ -1503,10 +1651,37 @@ ${rels.join('\n')}
 
   // ── BODY SECTIONS ──
 
-  // ── EXECUTIVE OVERVIEW (if provided) ──
+  // ── TOC HELPER ──
+  const tocEntry = (num, title, indent=false) => `<w:p><w:pPr><w:spacing w:before="0" w:after="200"/>${indent?'<w:ind w:left="360"/>':''}<w:pBdr><w:bottom w:val="single" w:sz="4" w:color="E2E8F0" w:space="2"/></w:pBdr></w:pPr>
+    <w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="20"/><w:szCs w:val="20"/><w:color w:val="2D3748"/></w:rPr>
+    <w:t xml:space="preserve">${esc(num + '.\u2003' + title)}</w:t></w:r></w:p>`;
+
+  // ── TABLE OF CONTENTS ──
+  body += emptyP(280);
+  body += sectionHeading('Table of Contents');
+  body += emptyP(120);
+  let tocNum = 1;
+  if (data.execOverview) body += tocEntry(tocNum++, 'Executive Overview');
+  body += tocEntry(tocNum++, 'Corporate Qualifications');
+  if (data.projectOverview) body += tocEntry(tocNum++, 'Project Overview');
+  body += tocEntry(tocNum++, 'Bill of Materials');
+  body += tocEntry(tocNum++, 'System Architecture Overview');
+  body += tocEntry(tocNum++, 'Installation Methodology');
+  body += tocEntry(tocNum++, 'Technical Considerations');
+  body += tocEntry(tocNum++, 'Dependencies & Client Responsibilities');
+  body += tocEntry(tocNum++, 'Deliverables');
+  body += tocEntry(tocNum++, 'Conclusion');
+  if (data.drawings.length > 0) body += tocEntry(tocNum++, 'System Drawings');
+  body += pageBreak();
+
+  // ── BUILD SECTION NUMBERS ──
+  let secNum = 1;
+  const sec = (title) => `${secNum++}. ${title}`;
+
+  // ── 1. EXECUTIVE OVERVIEW ──
   if (data.execOverview) {
     body += emptyP(280);
-    body += sectionHeading('Executive Overview');
+    body += sectionHeading(sec('Executive Overview'));
     body += emptyP(80);
     data.execOverview.split('\n\n').filter(s => s.trim()).forEach(para => {
       body += p(para.trim(), {size:20, color:'2D3748', after:160});
@@ -1514,219 +1689,32 @@ ${rels.join('\n')}
     body += pageBreak();
   }
 
-  // ── PROJECT OVERVIEW (if provided) ──
-  if (data.projectOverview) {
-    body += emptyP(280);
-    body += sectionHeading('Project Overview');
-    body += emptyP(80);
-    data.projectOverview.split('\n\n').filter(s => s.trim()).forEach(para => {
-      body += p(para.trim(), {size:20, color:'2D3748', after:160});
-    });
-    body += pageBreak();
-  }
-
-  // ── ABOUT OKOS ──
+  // ── 2. CORPORATE QUALIFICATIONS ──
   body += emptyP(280);
-  body += sectionHeading('About Okos');
+  body += sectionHeading(sec('Corporate Qualifications'));
   body += emptyP(80);
-  body += p('Okos is a North American physical security deployment company founded in 2019, with offices in California and Alberta. The company delivers cloud-based physical security systems across video surveillance, access control, alarm monitoring, and environmental sensing, with service scope spanning design, procurement, installation, integration, and commissioning as defined by each engagement. Okos operates a vendor-agnostic platform compatible with all major cloud security ecosystems and maintains a network of 1,000+ certified low-voltage technicians across the US and Canada. The specific scope applicable to this engagement is defined in the Scope of Work below.', {size:20, color:'2D3748', after:0});
+  body += subHeading('About Okos');
+  body += emptyP(40);
+
+  // Company Overview
+  body += `<w:p><w:pPr><w:spacing w:before="160" w:after="60"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="20"/><w:color w:val="1C2431"/></w:rPr><w:t>Company Overview</w:t></w:r></w:p>`;
+  body += p('Okos Inc. is a security deployment contractor specializing in the design, supply, installation, and commissioning of access control and CCTV systems across commercial, industrial, and institutional facilities. Headquartered in Calgary, Alberta, with operations across North America, Okos has delivered multi-site security infrastructure projects since 2019.', {size:20, color:'2D3748', after:0});
   body += emptyP(120);
-  body += pageBreak();
 
-  // ── TECHNICAL APPROACH ──
-  body += emptyP(280);
-  body += sectionHeading('Technical Approach');
-  body += emptyP(80);
-  body += subHeading('Engineering-First System Design');
-  body += emptyP(40);
-  body += p('Okos approaches physical security installations as engineered systems, not plug-and-play deployments. Design work includes power supply load calculations, voltage drop analysis on extended cable runs, grounding and bonding requirements, and environmental considerations including temperature range, moisture exposure, and electromagnetic interference. This engineering discipline applies across all system types.', {size:20,color:'2D3748',after:120});
-  body += p('For camera systems, this means accurate PoE budget calculations, cable length compliance, and designed-in redundancy at the switch and power supply level. For access control, it means correctly sized power supplies for door hardware, with explicit accounting for inrush currents and fire alarm interfaces, rather than undersized assemblies that generate nuisance failures and intermittent faults. The result is lower rework rates during commissioning and longer equipment service life.', {size:20,color:'2D3748',after:0});
-  body += emptyP(160);
-  body += subHeading('Code Compliance and Life Safety Integration');
-  body += emptyP(40);
-  body += p('Okos reviews and applies the specific codes governing each project, including NEC, CSA, UL listings, and NFPA requirements. This is particularly relevant in access control installations, where systems interface with fire alarms, emergency egress hardware, and life safety circuits. Fail-safe and fail-secure requirements are implemented correctly by design, fire alarm relay supervision is addressed in the schematic, and wiring methods are specified to meet local authority having jurisdiction (AHJ) requirements.', {size:20,color:'2D3748',after:120});
-  body += p('Treating code compliance as a design input rather than a post-installation correction reduces inspection failures, eliminates remediation costs, and ensures the system meets regulatory requirements through future audits.', {size:20,color:'2D3748',after:0});
-  body += emptyP(160);
-  body += subHeading('Reliability, Maintainability, and Documentation');
-  body += emptyP(40);
-  body += p('Okos designs for lifecycle performance. Panel layouts are organized for serviceability, wiring is labeled to a consistent standard, IP addressing schemes are documented, and termination practices are standardized across all installers. The intent is that any qualified technician can troubleshoot the system without relying on institutional knowledge from the original installation crew.', {size:20,color:'2D3748',after:120});
-  body += p('System designs include spare capacity, diagnostic access points, and complete as-built documentation delivered at closeout. This reduces long-term maintenance costs and converts reactive service calls into manageable, proactive system management.', {size:20,color:'2D3748',after:0});
-  body += emptyP(160);
-  body += subHeading('Cross-Trade Coordination and Stakeholder Communication');
-  body += emptyP(40);
-  body += p('Low-voltage system failures are frequently the result of coordination gaps between trades rather than technical deficiencies in the equipment itself. Okos translates technical requirements into clear scopes of work for electrical, structural, and IT contractors at the outset of each project. Pathway planning is coordinated with electrical and civil trades before mobilization to prevent common field conflicts including missing conduit, overcrowded raceways, and inadequate power infrastructure.', {size:20,color:'2D3748',after:120});
-  body += p('For projects with IT integration requirements, Okos communicates VLAN configurations, network segmentation, cybersecurity policies, and bandwidth requirements directly with client IT teams. This reduces friction on site and ensures network infrastructure is provisioned correctly before device deployment begins.', {size:20,color:'2D3748',after:0});
-  body += emptyP(120);
-  body += pageBreak();
-
-  // ── SOW & BOM ──
-  body += emptyP(280);
-  body += sectionHeading('Design Document \u2014 Scope & Bill of Materials');
-  body += emptyP(100);
-
-  // Header fields
-  const hcw = [1700, 3380, 1500, 3500];
-  const htotal = hcw.reduce((a,b)=>a+b,0);
-  body += `<w:tbl><w:tblPr><w:tblW w:w="${htotal}" w:type="dxa"/>
-    <w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(s=>`<w:${s} w:val="none" w:sz="0" w:color="auto"/>`).join('')}</w:tblBorders>
-    <w:tblLook w:val="0000"/>
-  </w:tblPr><w:tblGrid>${hcw.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
-  [
-    ['Project Code', data.projectCode, 'Date', data.date],
-    ['Facility Name', data.facilityName || data.clientName, 'Rev.', data.revision],
-    ['Project Address', data.projectLocation, '', ''],
-  ].forEach(row => {
-    body += `<w:tr>`;
-    [0,1,2,3].forEach(i => {
-      const isLabel = i%2===0;
-      body += `<w:tc><w:tcPr><w:tcW w:w="${hcw[i]}" w:type="dxa"/>
-        <w:shd w:val="clear" w:color="auto" w:fill="${isLabel?'F0F4F8':'FFFFFF'}"/>
-        <w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="D0D8E4"/>`).join('')}</w:tcBorders>
-        <w:tcMar><w:top w:w="80" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar>
-      </w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/>
-        ${isLabel?'<w:b/>':''}<w:sz w:val="20"/><w:szCs w:val="20"/>
-        <w:color w:val="${isLabel?'1C2431':'2D3748'}"/>
-      </w:rPr><w:t xml:space="preserve">${esc(row[i])}</w:t></w:r></w:p></w:tc>`;
-    });
-    body += `</w:tr>`;
-  });
-  body += `</w:tbl>`;
+  // How We Work
+  body += `<w:p><w:pPr><w:spacing w:before="160" w:after="60"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="20"/><w:color w:val="1C2431"/></w:rPr><w:t>How We Work</w:t></w:r></w:p>`;
+  body += p('All Okos projects are executed through a structured deployment process managed via our proprietary project management platform. This ensures consistent documentation, version-controlled design deliverables, and formal commissioning reports on every engagement. Our in-house technical team handles design and field delivery directly, maintaining a single chain of accountability from initial scope through final handover.', {size:20, color:'2D3748', after:0});
   body += emptyP(160);
 
-  // Okos scope
-  if (data.okosScope.length > 0) {
-    body += `<w:p><w:pPr><w:spacing w:before="200" w:after="80"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="24"/><w:color w:val="1C2431"/></w:rPr><w:t>Okos Scope of Work:</w:t></w:r></w:p>`;
-    data.okosScope.forEach((item, i) => { body += scopeItemXml(`${i+1}.  ${item}`); });
-  }
+  // Technical Team Qualification heading
+  body += `<w:p><w:pPr><w:spacing w:before="160" w:after="60"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="20"/><w:color w:val="1C2431"/></w:rPr><w:t>Technical Team Qualification</w:t></w:r></w:p>`;
+  body += p('The following profiles represent the Okos technical team directly responsible for the design, coordination, and delivery of this engagement. All team members operate within the OkosAI platform, ensuring full documentation, version control, and quality review are maintained centrally throughout the design and deployment lifecycle.', {size:20, color:'2D3748', after:120});
 
-  // Client scope
-  if (data.clientScope.length > 0) {
-    body += emptyP(80);
-    body += `<w:p><w:pPr><w:spacing w:before="160" w:after="80"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="24"/><w:color w:val="1C2431"/></w:rPr><w:t>Client Scope of Work:</w:t></w:r></w:p>`;
-    data.clientScope.forEach(item => { body += scopeItemXml(`~ ${item}`); });
-  }
+  // Executive Oversight label
+  body += subHeading('Executive Oversight');
+  body += emptyP(60);
 
-  // Assumptions
-  if (data.assumptions.length > 0) {
-    body += emptyP(80);
-    body += `<w:p><w:pPr><w:spacing w:before="160" w:after="80"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="24"/><w:color w:val="1C2431"/></w:rPr><w:t>Assumptions:</w:t></w:r></w:p>`;
-    data.assumptions.forEach(item => { body += scopeItemXml(`~ ${item}`); });
-  }
-
-  const hasScopeContent = data.okosScope.length > 0 || data.clientScope.length > 0 || data.assumptions.length > 0;
-  if (hasScopeContent) {
-    body += emptyP(160);
-    body += pageBreak();
-  }
-
-  // Okos materials table
-  if (data.okosMats.length > 0) {
-    body += emptyP(280);
-    body += `<w:p><w:pPr><w:spacing w:before="0" w:after="80"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="24"/><w:color w:val="1C2431"/></w:rPr><w:t>Okos Supplied Materials:</w:t></w:r></w:p>`;
-    body += emptyP(40);
-    const mw = [400, 2360, 3760, 600, 600, 760, 1600];
-    body += `<w:tbl><w:tblPr><w:tblW w:w="10080" w:type="dxa"/>
-      <w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(s=>`<w:${s} w:val="none" w:sz="0" w:color="auto"/>`).join('')}</w:tblBorders>
-      <w:tblLook w:val="0000"/>
-    </w:tblPr><w:tblGrid>${mw.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
-    // Header row
-    body += `<w:tr>${['#','Description','Specification','Qty','Unit','MSRP','Notes'].map((h,i)=>`<w:tc><w:tcPr><w:tcW w:w="${mw[i]}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="1C2431"/><w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="1C2431"/>`).join('')}</w:tcBorders><w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar></w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="FFFFFF"/></w:rPr><w:t xml:space="preserve">${esc(h)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`;
-    // Data rows
-    data.okosMats.forEach((m, ri) => {
-      const shade = ri%2===0 ? 'F6F7F8' : 'FFFFFF';
-      const price = m.price ? '$' + parseFloat(m.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
-      body += `<w:tr>${[String(ri+1), m.desc, m.spec, m.qty, m.unit, price, m.notes].map((val,i)=>`<w:tc><w:tcPr><w:tcW w:w="${mw[i]}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${shade}"/><w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="D0D8E4"/>`).join('')}</w:tcBorders><w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar></w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="2D3748"/></w:rPr><w:t xml:space="preserve">${esc(val)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`;
-    });
-    body += `</w:tbl>`;
-    body += emptyP(160);
-  }
-
-  // Client materials table
-  if (data.clientMats.length > 0) {
-    body += `<w:p><w:pPr><w:spacing w:before="200" w:after="80"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="24"/><w:color w:val="1C2431"/></w:rPr><w:t>Client Supplied:</w:t></w:r></w:p>`;
-    const cw2 = [400, 2680, 4200, 600, 600, 1600];
-    body += `<w:tbl><w:tblPr><w:tblW w:w="10080" w:type="dxa"/>
-      <w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(s=>`<w:${s} w:val="none" w:sz="0" w:color="auto"/>`).join('')}</w:tblBorders>
-      <w:tblLook w:val="0000"/>
-    </w:tblPr><w:tblGrid>${cw2.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
-    body += `<w:tr>`;
-    ['#','Description','Specification','Qty','Unit','Notes'].forEach((h,i) => {
-      body += `<w:tc><w:tcPr><w:tcW w:w="${cw2[i]}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="1C2431"/>
-        <w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="1C2431"/>`).join('')}</w:tcBorders>
-        <w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar>
-      </w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="FFFFFF"/></w:rPr><w:t xml:space="preserve">${esc(h)}</w:t></w:r></w:p></w:tc>`;
-    });
-    body += `</w:tr>`;
-    data.clientMats.forEach((m, ri) => {
-      const shade = ri%2===0 ? 'F6F7F8' : 'FFFFFF';
-      body += `<w:tr>`;
-      [String(ri+1), m.desc, m.spec, m.qty, m.unit, m.notes].forEach((val, i) => {
-        body += `<w:tc><w:tcPr><w:tcW w:w="${cw2[i]}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${shade}"/>
-          <w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="D0D8E4"/>`).join('')}</w:tcBorders>
-          <w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar>
-        </w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="2D3748"/></w:rPr><w:t xml:space="preserve">${esc(val)}</w:t></w:r></w:p></w:tc>`;
-      });
-      body += `</w:tr>`;
-    });
-    body += `</w:tbl>`;
-    body += emptyP(160);
-  }
-
-  // Others
-  body += emptyP(80);
-  body += `<w:p><w:pPr><w:spacing w:before="160" w:after="80"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="24"/><w:color w:val="1C2431"/></w:rPr><w:t>Others:</w:t></w:r></w:p>`;
-  const ow = [400, 3800, 5880];
-  body += `<w:tbl><w:tblPr><w:tblW w:w="10080" w:type="dxa"/>
-    <w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(s=>`<w:${s} w:val="none" w:sz="0" w:color="auto"/>`).join('')}</w:tblBorders>
-    <w:tblLook w:val="0000"/>
-  </w:tblPr><w:tblGrid>${ow.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
-  [['a','Permitting Requirement',data.permitting],['b','Lift Requirement',data.lift],['c','Bulky Material Handling Fee',data.bulky]].forEach(([l,label,val],ri) => {
-    const shade = ri%2===0 ? 'F6F7F8' : 'FFFFFF';
-    body += `<w:tr>`;
-    [l, label, val].forEach((txt, i) => {
-      body += `<w:tc><w:tcPr><w:tcW w:w="${ow[i]}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${shade}"/>
-        <w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="D0D8E4"/>`).join('')}</w:tcBorders>
-        <w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar>
-      </w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="2D3748"/></w:rPr><w:t xml:space="preserve">${esc(txt)}</w:t></w:r></w:p></w:tc>`;
-    });
-    body += `</w:tr>`;
-  });
-  body += `</w:tbl>`;
-
-  if (data.notes) {
-    body += emptyP(80);
-    body += p('Additional Notes:', {bold:true, size:20, color:'1C2431', after:40});
-    body += p(data.notes, {size:20, color:'2D3748', after:0});
-  }
-
-  // ── SYSTEM DRAWINGS ──
-  if (data.drawings.length > 0) {
-    body += pageBreak();
-    body += emptyP(280);
-    body += sectionHeading('System Drawings');
-    body += emptyP(80);
-    body += p('The following drawings depict the system design and device placement for this engagement.', {size:20, color:'2D3748', after:200});
-    data.drawings.forEach((d, i) => {
-      // Title from filename
-      const title = d.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
-      body += `<w:p><w:pPr><w:spacing w:before="0" w:after="120"/></w:pPr>
-        <w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="22"/><w:color w:val="1C2431"/></w:rPr>
-        <w:t xml:space="preserve">${esc(title)}</w:t></w:r></w:p>`;
-      // Image: max width 9360 twips (6.5in) = 5943600 EMU, scale height proportionally
-      const W_EMU = 5943600;
-      const H_EMU = Math.round(W_EMU * 0.55); // approximate 16:9-ish ratio
-      body += inlineImage(drawingRIds[i], W_EMU, H_EMU, i);
-    });
-  }
-
-  // ── TEAM QUALIFICATIONS ──
-  body += pageBreak();
-  body += emptyP(280);
-  body += sectionHeading('Team Qualifications');
-  body += emptyP(80);
-  body += p('The following profiles represent the Okos team directly responsible for the design, coordination, and delivery of this engagement.', {size:20, color:'2D3748', after:200});
-
-  // Bill Moffatt — shaded card
+  // Bill Moffatt card
   body += `<w:tbl><w:tblPr><w:tblW w:w="10080" w:type="dxa"/>
     <w:tblBorders>
       <w:top w:val="single" w:sz="4" w:color="33BBA5"/>
@@ -1741,18 +1729,18 @@ ${rels.join('\n')}
   <w:tr><w:tc><w:tcPr><w:tcW w:w="10080" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="F0FAF8"/>
     <w:tcMar><w:top w:w="200" w:type="dxa"/><w:left w:w="280" w:type="dxa"/><w:bottom w:w="200" w:type="dxa"/><w:right w:w="280" w:type="dxa"/></w:tcMar>
   </w:tcPr>`;
-  body += p('William (Bill) Moffatt', {bold:true, size:30, color:'1C2431', after:20});
-  body += p('Director of Operations', {size:21, color:'33BBA5', after:140});
-  body += p('Education:  MBA, Western University  \u00b7  B.Sc. Electrical Engineering & Computer Science, Queen\'s University', {size:18, color:'555555', after:40});
-  body += p('Background:  Managing Partner, N//ERGY Solutions (10 yrs)  \u00b7  Senior Investment Specialist, Scotia Wealth Management  \u00b7  International Satellite Sales, Honeywell COM DEV', {size:18, color:'555555', after:80});
-  body += p('A Queen\'s-trained Electrical Engineer with a Western MBA, Bill brings over 35 years of technical and operational leadership to his role at Okos. He spent a decade as Managing Partner of N//ERGY Solutions, delivering commercial energy programs for Loblaws, Canadian Tire, Labatt\'s, and Diageo, and previously managed over $100M in client assets at Scotia Wealth Management.', {size:20, color:'2D3748', after:0});
+  body += p('William (Bill) Moffatt', {bold:true, size:28, color:'1C2431', after:20});
+  body += p('Director of Operations', {size:20, color:'33BBA5', after:100});
+  body += p('Education\u2003 MBA, Western University  \u00b7  B.Sc. Electrical Engineering & Computer Science, Queen\'s University', {size:18, color:'555555', after:40});
+  body += p('Background\u2003 Managing Partner, N//ERGY Solutions (10 yrs)  \u00b7  Senior Investment Specialist, Scotia Wealth Management  \u00b7  International Sales, Honeywell COM DEV', {size:18, color:'555555', after:80});
+  body += p('A Queen\'s-trained Electrical Engineer with a Western MBA, Bill brings over 35 years of technical and operational leadership to his role at Okos. He spent a decade as Managing Partner of N//ERGY Solutions, delivering commercial energy programs for Loblaws, Canadian Tire, Labatt\'s, and Diageo, and previously managed over $100M in client assets at Scotia Wealth Management. At Okos, Bill provides executive oversight across all deployment operations and is the senior point of accountability on this engagement.', {size:19, color:'2D3748', after:0});
   body += `</w:tc></w:tr></w:tbl>`;
-
   body += emptyP(160);
+
+  // Project Leadership
   body += subHeading('Project Leadership');
   body += emptyP(60);
 
-  // Two-col team card helper
   const teamCard = (name, title, details, bio) => {
     const c1 = 3000, c2 = 7080;
     const borders = `
@@ -1789,34 +1777,275 @@ ${rels.join('\n')}
   body += emptyP(120);
   body += teamCard('Satya Sadasivam', 'Quotation Specialist & Solutions Designer',
     ['Okos, 3+ years', 'Platforms: Verkada, Rhombus, Brivo, Avigilon Openpath, KISI, HID, Samsara'],
-    'Satya is Okos\'s lead solutions designer, translating client requirements into complete, costed system designs. With 25+ years across telecommunications, physical security project management, and enterprise integrations, including projects for Embassy Group, P&G, and Syngene, he brings deep cross-platform expertise to every pre-construction phase.'
+    'Satya is Okos\'s lead solutions designer, translating client requirements into complete, costed system designs. With 25+ years across telecommunications, physical security project management, and enterprise integrations — including projects for Embassy Group, P&G, and Syngene — he brings deep cross-platform expertise to every pre-construction phase.'
   );
+  body += pageBreak();
 
+  // ── 3. PROJECT OVERVIEW ──
+  if (data.projectOverview) {
+    body += emptyP(280);
+    body += sectionHeading(sec('Project Overview'));
+    body += emptyP(80);
+    data.projectOverview.split('\n\n').filter(s => s.trim()).forEach(para => {
+      body += p(para.trim(), {size:20, color:'2D3748', after:160});
+    });
+    body += pageBreak();
+  } else {
+    secNum++; // skip number
+  }
+
+  // ── 4. BILL OF MATERIALS ──
+  body += emptyP(280);
+  body += sectionHeading(sec('Bill of Materials'));
+  body += emptyP(100);
+
+  // Project header table
+  const hcw = [1700, 3380, 1500, 3500];
+  const htotal = hcw.reduce((a,b)=>a+b,0);
+  body += `<w:tbl><w:tblPr><w:tblW w:w="${htotal}" w:type="dxa"/>
+    <w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(s=>`<w:${s} w:val="none" w:sz="0" w:color="auto"/>`).join('')}</w:tblBorders>
+    <w:tblLook w:val="0000"/>
+  </w:tblPr><w:tblGrid>${hcw.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
+  [
+    ['Project Code', data.projectCode, 'Date', data.date],
+    ['Facility Name', data.facilityName || data.clientName, 'Rev.', data.revision],
+    ['Project Address', data.projectLocation, '', ''],
+  ].forEach(row => {
+    body += `<w:tr>`;
+    [0,1,2,3].forEach(i => {
+      const isLabel = i%2===0;
+      body += `<w:tc><w:tcPr><w:tcW w:w="${hcw[i]}" w:type="dxa"/>
+        <w:shd w:val="clear" w:color="auto" w:fill="${isLabel?'F0F4F8':'FFFFFF'}"/>
+        <w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="D0D8E4"/>`).join('')}</w:tcBorders>
+        <w:tcMar><w:top w:w="80" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar>
+      </w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/>
+        ${isLabel?'<w:b/>':''}<w:sz w:val="20"/><w:szCs w:val="20"/>
+        <w:color w:val="${isLabel?'1C2431':'2D3748'}"/>
+      </w:rPr><w:t xml:space="preserve">${esc(row[i])}</w:t></w:r></w:p></w:tc>`;
+    });
+    body += `</w:tr>`;
+  });
+  body += `</w:tbl>`;
   body += emptyP(160);
-  body += subHeading('Design Team');
-  body += emptyP(60);
 
-  body += teamCard('Srutakirti Sinha', 'CCTV Specialist',
-    ['Okos, 3+ years', 'M.Sc. Information Technology'],
-    'Specializes in CCTV system design, camera placement, network diagrams, and storage estimation. Expertise in video analytics and AI-driven monitoring integration, with remote configuration and troubleshooting support for field teams.'
-  );
-  body += emptyP(120);
-  body += teamCard('Allen Alexis Manalo', 'System Design Engineer',
-    ['Okos, ELV Systems', 'B.S. Industrial Technology'],
-    'ELV specialist across CCTV, ACS, FDAS, and PAVA. Produces system layouts, equipment placement plans, and BOMs with SketchUp 3D modeling. Prior background as Pre-Sales Design Engineer at IoT Philippines.'
-  );
-  body += emptyP(120);
-  body += teamCard('Raffy Tolentino', 'System Design Engineer',
-    ['Okos, ELV Systems', 'B.Arch, Technological Institute of the Philippines'],
-    '14+ years designing ELV systems including CCTV, access control, BGM/PA, and FDAS. Converts client requirements into complete design packages including preliminary layouts, budgetary BOMs, and cost estimates. Proficient in AutoCAD.'
-  );
+  // Scope sections
+  if (data.okosScope.length > 0) {
+    body += `<w:p><w:pPr><w:spacing w:before="200" w:after="80"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="24"/><w:color w:val="1C2431"/></w:rPr><w:t>Okos Scope of Work:</w:t></w:r></w:p>`;
+    data.okosScope.forEach((item, i) => { body += scopeItemXml(`${i+1}.  ${item}`); });
+  }
+  if (data.clientScope.length > 0) {
+    body += emptyP(80);
+    body += `<w:p><w:pPr><w:spacing w:before="160" w:after="80"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="24"/><w:color w:val="1C2431"/></w:rPr><w:t>Client Scope of Work:</w:t></w:r></w:p>`;
+    data.clientScope.forEach(item => { body += scopeItemXml(`~ ${item}`); });
+  }
+  if (data.assumptions.length > 0) {
+    body += emptyP(80);
+    body += `<w:p><w:pPr><w:spacing w:before="160" w:after="80"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="24"/><w:color w:val="1C2431"/></w:rPr><w:t>Assumptions:</w:t></w:r></w:p>`;
+    data.assumptions.forEach(item => { body += scopeItemXml(`~ ${item}`); });
+  }
 
-  body += emptyP(200);
-  body += `<w:p><w:pPr><w:spacing w:before="0" w:after="40"/><w:pBdr><w:top w:val="single" w:sz="4" w:color="E2E8F0" w:space="4"/></w:pBdr></w:pPr></w:p>`;
+  // Materials — main flat table always shown, location breakdown appended if present
+  if (data.okosMats.length > 0) {
+    body += emptyP(160);
+    // Main flat table: # | Description | Specification | Qty | Unit | MSRP | Notes
+    const mw = [400, 2360, 3760, 600, 600, 760, 1600];
+    const matTableHeader = () => `<w:tr>${['#','Description','Specification','Qty','Unit','MSRP','Notes'].map((h,i)=>`<w:tc><w:tcPr><w:tcW w:w="${mw[i]}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="1C2431"/><w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="1C2431"/>`).join('')}</w:tcBorders><w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar></w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="FFFFFF"/></w:rPr><w:t xml:space="preserve">${esc(h)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`;
+    const matRow = (m, ri) => {
+      const shade = ri%2===0 ? 'F6F7F8' : 'FFFFFF';
+      const price = m.price ? '$' + parseFloat(m.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
+      return `<w:tr>${[String(ri+1), m.desc, m.spec, m.qty, m.unit, price, m.notes].map((val,i)=>`<w:tc><w:tcPr><w:tcW w:w="${mw[i]}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${shade}"/><w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="D0D8E4"/>`).join('')}</w:tcBorders><w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar></w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="2D3748"/></w:rPr><w:t xml:space="preserve">${esc(val)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`;
+    };
+    body += `<w:tbl><w:tblPr><w:tblW w:w="10080" w:type="dxa"/>
+      <w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(s=>`<w:${s} w:val="none" w:sz="0" w:color="auto"/>`).join('')}</w:tblBorders>
+      <w:tblLook w:val="0000"/>
+    </w:tblPr><w:tblGrid>${mw.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
+    body += matTableHeader();
+    data.okosMats.forEach((m, ri) => { body += matRow(m, ri); });
+    body += `</w:tbl>`;
+    body += emptyP(160);
+  }
+
+  // Location breakdown — appended below main table if BOM per Location sheet was present
+  if (data.locBomData && data.locBomData.length > 0) {
+    body += `<w:p><w:pPr><w:spacing w:before="280" w:after="120"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="26"/><w:color w:val="1C2431"/></w:rPr><w:t>Materials by Location</w:t></w:r></w:p>`;
+    // columns: Sl. No. | Specification | Make | Model | Qty | Unit
+    const lw = [400, 3200, 1600, 1800, 600, 600];
+    const locTableHeader = () => `<w:tr>${['Sl. No.','Specification','Make','Model','Qty','Unit'].map((h,i)=>`<w:tc><w:tcPr><w:tcW w:w="${lw[i]}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="1C2431"/><w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="1C2431"/>`).join('')}</w:tcBorders><w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar></w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="FFFFFF"/></w:rPr><w:t xml:space="preserve">${esc(h)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`;
+    const locMatRow = (item, ri, globalIdx) => {
+      const shade = ri%2===0 ? 'F6F7F8' : 'FFFFFF';
+      return `<w:tr>${[String(globalIdx), item.spec, item.make, item.model, item.qty, item.unit].map((val,i)=>`<w:tc><w:tcPr><w:tcW w:w="${lw[i]}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${shade}"/><w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="D0D8E4"/>`).join('')}</w:tcBorders><w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar></w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="2D3748"/></w:rPr><w:t xml:space="preserve">${esc(val)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`;
+    };
+    // Group by location
+    const groups = {};
+    const order = [];
+    data.locBomData.forEach(item => {
+      const loc = item.loc || 'General';
+      if (!groups[loc]) { groups[loc] = []; order.push(loc); }
+      groups[loc].push(item);
+    });
+    let globalRowIdx = 1;
+    order.forEach(loc => {
+      body += `<w:p><w:pPr><w:spacing w:before="200" w:after="80"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="22"/><w:color w:val="1C2431"/></w:rPr><w:t xml:space="preserve">${esc(loc)}</w:t></w:r></w:p>`;
+      body += `<w:tbl><w:tblPr><w:tblW w:w="10080" w:type="dxa"/>
+        <w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(s=>`<w:${s} w:val="none" w:sz="0" w:color="auto"/>`).join('')}</w:tblBorders>
+        <w:tblLook w:val="0000"/>
+      </w:tblPr><w:tblGrid>${lw.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
+      body += locTableHeader();
+      groups[loc].forEach((item, ri) => { body += locMatRow(item, ri, globalRowIdx++); });
+      body += `</w:tbl>`;
+      body += emptyP(120);
+    });
+    body += emptyP(80);
+  }
+
+  // Client materials
+  if (data.clientMats.length > 0) {
+    body += `<w:p><w:pPr><w:spacing w:before="200" w:after="80"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="24"/><w:color w:val="1C2431"/></w:rPr><w:t>Client Supplied:</w:t></w:r></w:p>`;
+    const cw2 = [400, 2680, 4200, 600, 600, 1600];
+    body += `<w:tbl><w:tblPr><w:tblW w:w="10080" w:type="dxa"/>
+      <w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(s=>`<w:${s} w:val="none" w:sz="0" w:color="auto"/>`).join('')}</w:tblBorders>
+      <w:tblLook w:val="0000"/>
+    </w:tblPr><w:tblGrid>${cw2.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
+    body += `<w:tr>${['#','Description','Specification','Qty','Unit','Notes'].map((h,i)=>`<w:tc><w:tcPr><w:tcW w:w="${cw2[i]}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="1C2431"/><w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="1C2431"/>`).join('')}</w:tcBorders><w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar></w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="FFFFFF"/></w:rPr><w:t xml:space="preserve">${esc(h)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`;
+    data.clientMats.forEach((m, ri) => {
+      const shade = ri%2===0 ? 'F6F7F8' : 'FFFFFF';
+      body += `<w:tr>${[String(ri+1), m.desc, m.spec, m.qty, m.unit, m.notes].map((val, i) => `<w:tc><w:tcPr><w:tcW w:w="${cw2[i]}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${shade}"/><w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="D0D8E4"/>`).join('')}</w:tcBorders><w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar></w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="2D3748"/></w:rPr><w:t xml:space="preserve">${esc(val)}</w:t></w:r></w:p></w:tc>`).join('')}</w:tr>`;
+    });
+    body += `</w:tbl>`;
+    body += emptyP(120);
+  }
+
+  // Others
   body += emptyP(80);
-  body += p('All team members operate within the OkosAI platform, ensuring full documentation, version control, and quality review are maintained centrally throughout the design and deployment lifecycle.', {italic:true, size:18, color:'555555', after:0});
+  body += `<w:p><w:pPr><w:spacing w:before="160" w:after="80"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="24"/><w:color w:val="1C2431"/></w:rPr><w:t>Others:</w:t></w:r></w:p>`;
+  const ow = [400, 3800, 5880];
+  body += `<w:tbl><w:tblPr><w:tblW w:w="10080" w:type="dxa"/>
+    <w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(s=>`<w:${s} w:val="none" w:sz="0" w:color="auto"/>`).join('')}</w:tblBorders>
+    <w:tblLook w:val="0000"/>
+  </w:tblPr><w:tblGrid>${ow.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
+  [['a','Permitting Requirement',data.permitting],['b','Lift Requirement',data.lift],['c','Bulky Material Handling Fee',data.bulky]].forEach(([l,label,val],ri) => {
+    const shade = ri%2===0 ? 'F6F7F8' : 'FFFFFF';
+    body += `<w:tr>`;
+    [l, label, val].forEach((txt, i) => {
+      body += `<w:tc><w:tcPr><w:tcW w:w="${ow[i]}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${shade}"/>
+        <w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="4" w:color="D0D8E4"/>`).join('')}</w:tcBorders>
+        <w:tcMar><w:top w:w="100" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:bottom w:w="100" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar>
+      </w:tcPr><w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="18"/><w:szCs w:val="18"/><w:color w:val="2D3748"/></w:rPr><w:t xml:space="preserve">${esc(txt)}</w:t></w:r></w:p></w:tc>`;
+    });
+    body += `</w:tr>`;
+  });
+  body += `</w:tbl>`;
 
-  // ── DOCUMENT XML ──
+  if (data.notes) {
+    body += emptyP(80);
+    body += p('Additional Notes:', {bold:true, size:20, color:'1C2431', after:40});
+    body += p(data.notes, {size:20, color:'2D3748', after:0});
+  }
+  body += pageBreak();
+
+  // ── 5. SYSTEM ARCHITECTURE OVERVIEW ──
+  body += emptyP(280);
+  body += sectionHeading(sec('System Architecture Overview'));
+  body += emptyP(80);
+  if (data.sysArch) {
+    data.sysArch.split('\n\n').filter(s => s.trim()).forEach(para => {
+      body += p(para.trim(), {size:20, color:'2D3748', after:160});
+    });
+  } else {
+    body += p('The system architecture for this engagement is designed around the specific site topology and connectivity requirements defined in the scope of work above. All devices and network components are selected and configured to ensure reliable, scalable integration across all locations covered by this engagement.', {size:20, color:'2D3748', after:160});
+    body += p('Okos will validate the system architecture during the site assessment phase and provide updated documentation reflecting any field conditions that affect the design prior to installation mobilization.', {size:20, color:'2D3748', after:0});
+  }
+
+  // System Drawings embedded here under Architecture
+  if (data.drawings.length > 0) {
+    body += emptyP(160);
+    data.drawings.forEach((d, i) => {
+      const title = d.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+      body += `<w:p><w:pPr><w:spacing w:before="0" w:after="120"/></w:pPr>
+        <w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:b/><w:sz w:val="22"/><w:color w:val="1C2431"/></w:rPr>
+        <w:t xml:space="preserve">${esc(title)}</w:t></w:r></w:p>`;
+      const W_EMU = 5943600;
+      const H_EMU = Math.round(W_EMU * 0.6);
+      body += inlineImage(drawingRIds[i], W_EMU, H_EMU, i);
+    });
+  }
+  body += pageBreak();
+
+  // ── 6. INSTALLATION METHODOLOGY ──
+  body += emptyP(280);
+  body += sectionHeading(sec('Installation Methodology'));
+  body += emptyP(80);
+  body += p('The implementation process begins with a thorough review of existing site conditions and infrastructure. Okos technical staff will conduct on-site walkthroughs to validate all mounting locations, cable pathways, power availability, and network access points prior to mobilization. All findings are documented in the OkosAI platform and any discrepancies from the original design are addressed before installation begins.', {size:20, color:'2D3748', after:160});
+  body += p('Following site validation, Okos will mobilize certified regional technicians for on-site deployment. Every technician operates within the Okos mobile app — checking in via geolocation, following AI-assisted installation checklists, and documenting all work in real time. All cabling, terminations, and device configurations will be completed in accordance with the approved design drawings and relevant code requirements.', {size:20, color:'2D3748', after:160});
+  body += p('Once hardware installation is complete, all devices and connections will be tested individually. Network configuration will be carried out including IP addressing, port assignments, and any required network segmentation. Comprehensive testing will be performed to verify signal integrity, link stability, and overall system performance. All punch-list items will be resolved prior to client handover.', {size:20, color:'2D3748', after:0});
+  body += pageBreak();
+
+  // ── 7. TECHNICAL CONSIDERATIONS ──
+  body += emptyP(280);
+  body += sectionHeading(sec('Technical Considerations'));
+  body += emptyP(80);
+  if (data.techConsiderations) {
+    data.techConsiderations.split('\n\n').filter(s => s.trim()).forEach(para => {
+      body += p(para.trim(), {size:20, color:'2D3748', after:160});
+    });
+  } else {
+    body += p('The proposed solution has been designed with a strong emphasis on reliability, performance, and long-term serviceability. All equipment selections are made with consideration for the specific environmental and operational requirements of this engagement.', {size:20, color:'2D3748', after:160});
+    body += p('The system is designed with future expansion in mind. Selected equipment supports higher bandwidth capabilities and additional connection points, allowing the network to be upgraded without replacing core infrastructure.', {size:20, color:'2D3748', after:0});
+  }
+  body += pageBreak();
+
+  // ── 8. DEPENDENCIES & CLIENT RESPONSIBILITIES ──
+  body += emptyP(280);
+  body += sectionHeading(sec('Dependencies & Client Responsibilities'));
+  body += emptyP(80);
+  if (data.aiDependencies) {
+    data.aiDependencies.split('\n\n').filter(s => s.trim()).forEach(para => {
+      body += p(para.trim(), {size:20, color:'2D3748', after:160});
+    });
+  } else {
+    body += p('Successful implementation of this engagement depends on the prior fulfilment of the following requirements. These items fall outside the Okos scope of work and are the responsibility of the client or client-designated parties.', {size:20, color:'2D3748', after:160});
+  }
+  if (data.clientScope.length > 0) {
+    data.clientScope.forEach(item => { body += scopeItemXml(`•  ${item}`); });
+    body += emptyP(80);
+  }
+  if (data.assumptions.length > 0) {
+    body += p('The following assumptions underpin the proposed solution. If any of these conditions are found to be inaccurate during site assessment, Okos will issue a revised scope and cost estimate accordingly.', {size:20, color:'2D3748', after:120});
+    data.assumptions.forEach(item => { body += scopeItemXml(`•  ${item}`); });
+  }
+  body += pageBreak();
+
+  // ── 9. DELIVERABLES ──
+  body += emptyP(280);
+  body += sectionHeading(sec('Deliverables'));
+  body += emptyP(80);
+  body += p('Upon completion of this engagement, Okos will deliver the following to the client:', {size:20, color:'2D3748', after:120});
+  [
+    'A fully functional, tested, and commissioned system in accordance with the approved design',
+    'As-built drawings reflecting all field conditions and final device placements',
+    'Device schedule including all installed equipment, serial numbers, and configuration details',
+    'Cable test results and quality control documentation for all installed cabling',
+    'Network documentation including IP addressing, port mapping, and VLAN configuration where applicable',
+    'Warranty documentation for all supplied equipment',
+    'Formal client acceptance sign-off and project closeout report',
+  ].forEach(item => { body += scopeItemXml(`•  ${item}`); });
+  body += pageBreak();
+
+  // ── 10. CONCLUSION ──
+  body += emptyP(280);
+  body += sectionHeading(sec('Conclusion'));
+  body += emptyP(80);
+  if (data.aiConclusion) {
+    data.aiConclusion.split('\n\n').filter(s => s.trim()).forEach(para => {
+      body += p(para.trim(), {size:20, color:'2D3748', after:160});
+    });
+  } else {
+    body += p(`This proposal presents a complete and professionally engineered solution for ${data.clientName || 'the client'} at ${data.facilityName || data.projectLocation || 'the project site'}. Okos is committed to delivering this engagement on time, on budget, and to the highest professional standards.`, {size:20, color:'2D3748', after:160});
+    body += p('The solution establishes a robust foundation for future expansion and delivers full documentation and commissioning support to ensure seamless handover and long-term system performance.', {size:20, color:'2D3748', after:0});
+  }
+
+
+    // ── DOCUMENT XML ──
   const docXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
   xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
