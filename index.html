@@ -502,8 +502,16 @@
 
       <!-- AI CONTENT -->
       <div class="section-label">AI-Assisted Content</div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>GEMINI API KEY <span style="color:var(--muted);font-weight:400;">— saved in your browser · <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--teal);">Get a free key →</a></span></label>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="geminiApiKey" placeholder="Paste your Gemini API key here (AIza...)" style="flex:1;" oninput="saveApiKey(this.value.trim())">
+          <button class="btn btn-outline btn-sm" onclick="toggleKeyVis()" id="keyVisBtn" style="flex-shrink:0;">Show</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Stored in your browser only — never saved to the server or repo.</div>
+      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <span style="font-size:13px;color:var(--muted);line-height:1.5;">Auto-generates Executive and Project Overviews from your BOM scope items.<br>Import your BOM first, then click generate.</span>
+        <span style="font-size:13px;color:var(--muted);line-height:1.5;">Auto-generates all sections from your BOM scope items.<br>Import your BOM first, then click generate.</span>
         <button class="btn btn-primary" id="genAllBtn" onclick="generateWithGemini('both')" style="white-space:nowrap;flex-shrink:0;margin-left:16px;">✦ Auto-generate All Sections</button>
       </div>
       <div id="geminiStatus" style="font-size:12px;color:var(--muted);margin-bottom:12px;display:none;"></div>
@@ -635,16 +643,6 @@
       <div class="panel-title">Generate Proposal</div>
       <div class="panel-sub">Review the checklist, then generate and download your DOCX.</div>
 
-      <div class="section-label">Gemini API Key</div>
-      <div class="form-group" style="margin-bottom:4px;">
-        <label>GEMINI API KEY <span style="color:var(--muted);font-weight:400;">— required for AI-generated overviews · <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--teal);">Get a free key →</a></span></label>
-        <div style="display:flex;gap:8px;">
-          <input type="password" id="geminiApiKey" placeholder="AIza..." style="flex:1;">
-          <button class="btn btn-outline btn-sm" onclick="toggleKeyVis()" id="keyVisBtn" style="flex-shrink:0;">Show</button>
-        </div>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:20px;">Key is saved in your browser only — never sent anywhere except Google's API.</div>
-
       <div class="section-label">Readiness Check</div>
       <ul class="checklist" id="checklist"></ul>
 
@@ -691,12 +689,11 @@ function saveApiKey(val) {
   try { localStorage.setItem('okos_gemini_key', val); } catch(e) {}
 }
 
-const OKOS_GEMINI_KEY = 'AIzaSyA59KL3QwKa1ZmSxbaJn__eVHqgZYlDbKg';
-
 function loadApiKey() {
   try {
+    const saved = localStorage.getItem('okos_gemini_key') || '';
     const el = document.getElementById('geminiApiKey');
-    if (el) el.value = OKOS_GEMINI_KEY;
+    if (el && saved) el.value = saved;
   } catch(e) {}
 }
 
@@ -709,12 +706,15 @@ function toggleKeyVis() {
 }
 
 async function generateWithGemini(type) {
-  const apiKey = document.getElementById('geminiApiKey')?.value?.trim() || OKOS_GEMINI_KEY;
+  const apiKey = document.getElementById('geminiApiKey')?.value?.trim() || localStorage.getItem('okos_gemini_key') || '';
 
   if (!apiKey) {
-    showToast('No Gemini API key found', 'error');
+    showToast('No API key — enter your Gemini API key in the field above', 'error');
     return;
   }
+
+  // Save key for future sessions
+  saveApiKey(apiKey);
 
   const clientName  = document.getElementById('clientName')?.value?.trim() || '[Client]';
   const projectCode = document.getElementById('projectCode')?.value?.trim() || '';
@@ -1356,7 +1356,7 @@ function collectData() {
 // ═══════════════════════════════════════════════
 function buildChecklist() {
   const d = collectData();
-  const hasApiKey = !!(document.getElementById('geminiApiKey')?.value?.trim() ||
+  const hasApiKey = !!(document.getElementById('geminiApiKey')?.value?.trim() || localStorage.getItem('okos_gemini_key') ||
     (()=>{ try { return localStorage.getItem('okos_gemini_key'); } catch(e){ return ''; }})());
   const items = [
     { label: 'Client name',          ok: !!d.clientName,          val: d.clientName || 'Missing' },
