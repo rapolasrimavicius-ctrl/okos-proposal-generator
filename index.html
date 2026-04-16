@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
     --navy:   #1C2431;
@@ -621,12 +622,12 @@
       <div class="section-label">Upload Drawings</div>
       <div class="upload-zone" id="drawingZone"
            ondrop="handleDrawingDrop(event)" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')">
-        <input type="file" accept="image/png,image/jpeg,image/jpg" multiple onchange="handleDrawingFiles(this.files)">
+        <input type="file" accept="image/png,image/jpeg,image/jpg,application/pdf" multiple onchange="handleDrawingFiles(this.files)">
         <div class="upload-icon">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         </div>
         <div class="upload-title">Drop drawings here</div>
-        <div class="upload-sub">PNG or JPG · Multiple files supported · Order shown below</div>
+        <div class="upload-sub">PNG, JPG or PDF · Multiple files supported · PDF pages rendered automatically</div>
       </div>
 
       <div id="drawingGrid" class="drawing-grid"></div>
@@ -1254,17 +1255,59 @@ function handleDrawingDrop(e) {
 
 function handleDrawingFiles(files) {
   Array.from(files).forEach(file => {
-    if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const arrayBuf = e.target.result;
-      const blob = new Blob([arrayBuf], {type: file.type});
-      const url = URL.createObjectURL(blob);
-      drawings.push({ name: file.name, dataUrl: url, arrayBuffer: arrayBuf, type: file.type });
-      renderDrawings();
-    };
-    reader.readAsArrayBuffer(file);
+    if (file.type === 'application/pdf') {
+      renderPdfAsImages(file);
+    } else if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const arrayBuf = e.target.result;
+        const blob = new Blob([arrayBuf], {type: file.type});
+        const url = URL.createObjectURL(blob);
+        drawings.push({ name: file.name, dataUrl: url, arrayBuffer: arrayBuf, type: file.type });
+        renderDrawings();
+      };
+      reader.readAsArrayBuffer(file);
+    }
   });
+}
+
+async function renderPdfAsImages(file) {
+  try {
+    // Set PDF.js worker
+    if (typeof pdfjsLib !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+    const arrayBuf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuf }).promise;
+    const totalPages = pdf.numPages;
+    showToast(`Rendering ${totalPages} page${totalPages > 1 ? 's' : ''} from ${file.name}...`);
+
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const scale = 2.0; // higher = better quality
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      // Convert canvas to PNG blob
+      const pngDataUrl = canvas.toDataURL('image/png');
+      const res = await fetch(pngDataUrl);
+      const pngBuf = await res.arrayBuffer();
+      const pageName = totalPages > 1
+        ? `${file.name.replace(/\.pdf$/i, '')} — Page ${pageNum}.png`
+        : `${file.name.replace(/\.pdf$/i, '')}.png`;
+
+      drawings.push({ name: pageName, dataUrl: pngDataUrl, arrayBuffer: pngBuf, type: 'image/png' });
+      renderDrawings();
+    }
+    showToast(`${file.name} rendered successfully`, 'success');
+  } catch (err) {
+    showToast(`Could not render PDF: ${err.message}`, 'error');
+    console.error(err);
+  }
 }
 
 function renderDrawings() {
