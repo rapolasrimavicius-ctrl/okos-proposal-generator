@@ -4,41 +4,60 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Okos — Technical Proposal Generator</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
-    --navy:   #1C2431;
-    --navy-l: #243040;
-    --teal:   #33BBA5;
-    --teal-d: #27967f;
-    --white:  #FFFFFF;
-    --grey:   #F6F7F8;
-    --border: #2E3D52;
-    --muted:  #6B7F99;
-    --text:   #E2E8F0;
-    --input:  #1A2234;
-    --success:#2ecc71;
-    --error:  #e74c3c;
+    --background:        #000000;
+    --background-subtle: #0a0a0a;
+    --background-hover:  #1f1f1f;
+    --border:            #1f1f1f;
+    --border-subtle:     #161616;
+    --border-strong:     #2e2e2e;
+    --foreground:        #ededed;
+    --foreground-muted:  #a1a1a1;
+    --foreground-subtle: #666666;
+    --accent:            #ffffff;
+    --accent-foreground: #000000;
+    --success:           #0070f3;
+    --error:             #e5484d;
+    --warning:           #f5a623;
+
+    /* Legacy aliases used by inline styles in markup */
+    --muted: var(--foreground-muted);
+
+    --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   }
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   html { font-size: 14px; }
   body {
-    background: var(--navy);
-    color: var(--text);
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  ::selection { background: var(--background-hover); color: var(--foreground); }
+
+  .mono, code, kbd, samp { font-family: var(--font-mono); }
 
   /* ── HEADER ── */
   .header {
-    background: var(--navy);
+    background: var(--background);
     border-bottom: 1px solid var(--border);
-    padding: 0 32px;
+    padding: 0 24px;
     height: 56px;
     display: flex;
     align-items: center;
@@ -50,167 +69,249 @@
   .header-logo {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
   }
-  .logo-mark {
-    width: 32px;
-    height: 32px;
-    background: var(--teal);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .logo-mark svg { width: 18px; height: 18px; }
-  .logo-text { font-family: 'Calibri', sans-serif; font-size: 16px; font-weight: 600; color: var(--white); }
-  .logo-sub { font-size: 12px; color: var(--muted); margin-left: 4px; }
+  .logo-text { color: var(--foreground); }
+  .logo-sep { color: var(--foreground-subtle); font-weight: 400; }
+  .logo-sub { color: var(--foreground-muted); font-weight: 400; }
   .header-badge {
+    font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 500;
-    color: var(--teal);
-    border: 1px solid var(--teal);
-    padding: 3px 10px;
-    border-radius: 20px;
-    letter-spacing: 0.05em;
+    color: var(--foreground);
+    border: 1px solid var(--border-strong);
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: transparent;
   }
 
   /* ── LAYOUT ── */
   .app {
     display: flex;
     flex: 1;
-    max-width: 1100px;
+    max-width: 1180px;
     margin: 0 auto;
     width: 100%;
-    padding: 32px 24px;
-    gap: 32px;
+    padding: 40px 32px;
+    gap: 56px;
   }
 
   /* ── SIDEBAR ── */
   .sidebar {
     width: 220px;
     flex-shrink: 0;
+    position: sticky;
+    top: 88px;
+    align-self: flex-start;
   }
   .sidebar-title {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--foreground-subtle);
     margin-bottom: 16px;
   }
   .step-list { display: flex; flex-direction: column; gap: 2px; }
   .step-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 8px;
+    gap: 12px;
+    padding: 8px 10px;
+    margin: 0 8px;
+    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: background 120ms ease;
     border: 1px solid transparent;
+    background: transparent;
   }
-  .step-item:hover { background: var(--navy-l); }
+  .step-item:hover { background: var(--background-hover); }
   .step-item.active {
-    background: var(--navy-l);
+    background: var(--background-subtle);
     border-color: var(--border);
   }
-  .step-item.active .step-num { background: var(--teal); color: var(--navy); }
-  .step-item.done .step-num { background: var(--teal-d); color: var(--white); }
   .step-num {
-    width: 24px; height: 24px;
-    border-radius: 50%;
-    background: var(--border);
-    color: var(--muted);
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: var(--background-subtle);
+    border: 1px solid var(--border);
+    color: var(--foreground-muted);
+    font-family: var(--font-mono);
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 500;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: all 0.2s;
+    transition: all 120ms ease;
+  }
+  .step-item.active .step-num {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+  .step-item.done .step-num {
+    background: var(--background-subtle);
+    border-color: var(--border-strong);
+    color: var(--foreground);
   }
   .step-info { flex: 1; min-width: 0; }
-  .step-label { font-size: 13px; font-weight: 500; color: var(--white); }
-  .step-desc { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .step-label { font-size: 13px; font-weight: 500; color: var(--foreground); letter-spacing: -0.005em; }
+  .step-desc { font-size: 12px; color: var(--foreground-muted); margin-top: 2px; }
 
   /* ── MAIN ── */
-  .main { flex: 1; min-width: 0; }
+  .main { flex: 1; min-width: 0; max-width: 880px; }
   .panel { display: none; }
   .panel.active { display: block; }
   .panel-title {
-    font-family: 'Calibri', sans-serif;
-    font-size: 22px;
-    font-weight: 500;
-    color: var(--white);
+    font-family: var(--font-sans);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--foreground);
     margin-bottom: 6px;
   }
   .panel-sub {
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 28px;
-    line-height: 1.6;
+    font-size: 14px;
+    color: var(--foreground-muted);
+    margin-bottom: 32px;
+    line-height: 1.5;
   }
 
   /* ── FORM ELEMENTS ── */
   .section-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--teal);
-    margin-bottom: 12px;
-    margin-top: 24px;
+    color: var(--foreground-subtle);
+    margin-top: 32px;
+    margin-bottom: 16px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border);
   }
+  /* Top divider on every section-label after the first within a panel */
+  .section-label ~ .section-label {
+    padding-top: 24px;
+    border-top: 1px solid var(--border-subtle);
+  }
   .section-label:first-child { margin-top: 0; }
+
+  /* Helper line under a section heading (e.g., AI-Assisted Content) */
+  .ai-helper {
+    font-size: 13px;
+    color: var(--foreground-muted);
+    line-height: 1.5;
+    margin-top: -8px;
+    margin-bottom: 24px;
+  }
+
+  /* Inline icon inside a label (e.g., sparkle on AI-fillable fields) */
+  .label-icon {
+    width: 12px;
+    height: 12px;
+    margin-right: 6px;
+    vertical-align: -1px;
+    color: var(--foreground-subtle);
+    display: inline-block;
+  }
+
+  /* Required-field asterisk */
+  .req-mark { color: var(--foreground-subtle); margin-left: 2px; }
+
   .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-bottom: 14px;
+    gap: 16px;
+    margin-bottom: 16px;
   }
-  .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
   .form-group:last-child { margin-bottom: 0; }
-  label { font-size: 12px; font-weight: 500; color: var(--muted); }
-  input[type=text], input[type=date], input[type=url], input[type=number], select, textarea {
-    background: var(--input);
+  label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--foreground-subtle);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  label a { text-transform: none; letter-spacing: 0; }
+
+  input[type=text], input[type=date], input[type=url], input[type=number], input[type=password], select, textarea {
+    background: var(--background-subtle);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 9px 12px;
-    font-size: 13px;
-    color: var(--white);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: var(--foreground);
     font-family: inherit;
     width: 100%;
-    transition: border-color 0.15s;
+    transition: border-color 120ms ease, background 120ms ease;
     -webkit-appearance: none;
+    appearance: none;
   }
   input:focus, select:focus, textarea:focus {
     outline: none;
-    border-color: var(--teal);
+    border-color: var(--foreground-muted);
   }
-  input::placeholder, textarea::placeholder { color: var(--muted); }
-  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7F99' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
-  select option { background: var(--navy-l); }
-  textarea { resize: vertical; line-height: 1.6; }
+  input::placeholder, textarea::placeholder { color: var(--foreground-subtle); }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1a1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 32px;
+    cursor: pointer;
+  }
+  select option { background: #0a0a0a; color: var(--foreground); }
+  textarea { resize: vertical; line-height: 1.5; min-height: 72px; }
+
+  /* Mono inputs for technical IDs */
+  input#projectCode { font-family: var(--font-mono); font-size: 13px; }
 
   /* ── UPLOAD ZONE ── */
   .upload-zone {
-    border: 2px dashed var(--border);
-    border-radius: 10px;
-    padding: 24px;
+    border: 1px dashed var(--border-strong);
+    border-radius: 8px;
+    padding: 40px 24px;
     text-align: center;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background 120ms ease, border-color 120ms ease;
     position: relative;
-    background: var(--input);
+    background: transparent;
   }
-  .upload-zone:hover, .upload-zone.drag { border-color: var(--teal); background: rgba(51,187,165,0.05); }
-  .upload-zone.has-file { border-color: var(--teal); border-style: solid; background: rgba(51,187,165,0.04); }
-  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-  .upload-icon { color: var(--teal); margin-bottom: 10px; }
-  .upload-title { font-size: 13px; font-weight: 500; color: var(--white); margin-bottom: 4px; }
-  .upload-sub { font-size: 12px; color: var(--muted); }
+  .upload-zone:hover,
+  .upload-zone.drag {
+    background: var(--background-subtle);
+    border-color: var(--foreground-muted);
+  }
+  .upload-zone.has-file {
+    background: var(--background-subtle);
+    border-style: solid;
+    border-color: var(--border-strong);
+  }
+  .upload-zone input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+  .upload-icon {
+    color: var(--foreground-muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .upload-icon svg { width: 24px; height: 24px; }
+  .upload-title { font-size: 14px; font-weight: 500; color: var(--foreground); margin-bottom: 4px; }
+  .upload-sub { font-size: 13px; color: var(--foreground-muted); }
 
   /* ── SCOPE / BOM ROWS ── */
   .scope-row {
@@ -219,162 +320,263 @@
     align-items: center;
     margin-bottom: 8px;
   }
-  .scope-row input {
-    flex: 1;
-  }
+  .scope-row input { flex: 1; }
   .mat-row {
     display: grid;
-    grid-template-columns: 1fr 1.6fr 60px 60px 80px 1fr 1fr;
+    grid-template-columns: 1fr 1.6fr 60px 60px 80px 1fr 1fr 32px;
     gap: 6px;
     align-items: center;
     margin-bottom: 6px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border-subtle);
   }
-  .mat-row input { font-size: 12px; padding: 7px 9px; }
+  .mat-row:hover { background: var(--background-hover); }
+  .mat-row input { font-size: 13px; padding: 6px 10px; background: transparent; border-color: transparent; }
+  .mat-row input:hover { border-color: var(--border); background: var(--background-subtle); }
+  .mat-row input:focus { border-color: var(--foreground-muted); background: var(--background-subtle); }
+  .mat-row input[id*='-mat-price-'],
+  .mat-row input[id*='-mat-qty-'] {
+    font-family: var(--font-mono);
+  }
+
+  .mat-header {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr 60px 60px 80px 1fr 1fr 32px;
+    gap: 6px;
+    margin-bottom: 4px;
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .mat-header span {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--foreground-subtle);
+    padding: 0 10px;
+  }
+
+  /* Empty-state row for materials tables */
+  .mat-empty {
+    font-size: 13px;
+    color: var(--foreground-subtle);
+    padding: 14px 10px;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 6px;
+  }
 
   /* ── BUTTONS ── */
   .btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 9px 18px;
-    border-radius: 8px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 6px;
     font-size: 13px;
     font-weight: 500;
     font-family: inherit;
     cursor: pointer;
-    border: none;
-    transition: all 0.15s;
+    border: 1px solid transparent;
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease, opacity 120ms ease;
     text-decoration: none;
+    white-space: nowrap;
+    line-height: 1;
   }
-  .btn-primary { background: var(--teal); color: var(--navy); }
-  .btn-primary:hover { background: var(--teal-d); }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-foreground);
+    border-color: var(--accent);
+    padding: 0 16px;
+  }
+  .btn-primary:hover:not(:disabled) { background: #fafafa; }
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-  .btn-outline { background: transparent; color: var(--teal); border: 1px solid var(--border); }
-  .btn-outline:hover { border-color: var(--teal); background: rgba(51,187,165,0.05); }
-  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-  .btn-ghost:hover { color: var(--white); border-color: var(--muted); }
-  .btn-danger { background: transparent; color: var(--error); border: 1px solid var(--border); font-size: 12px; padding: 6px 10px; }
-  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-outline {
+    background: transparent;
+    color: var(--foreground);
+    border-color: var(--border-strong);
+  }
+  .btn-outline:hover { background: var(--background-hover); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--foreground-muted);
+    border-color: transparent;
+  }
+  .btn-ghost:hover { background: var(--background-hover); color: var(--foreground); }
+  .btn-danger {
+    background: transparent;
+    color: var(--foreground-subtle);
+    border-color: transparent;
+    height: 28px;
+    padding: 0 8px;
+    font-size: 14px;
+    line-height: 1;
+  }
+  .btn-danger:hover { color: var(--error); background: var(--background-hover); }
+  .btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
   .btn-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 32px;
-    padding-top: 20px;
+    margin-top: 40px;
+    padding-top: 24px;
     border-top: 1px solid var(--border);
+    gap: 16px;
   }
+  .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 
   /* ── DRAWINGS ── */
-  .drawing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 12px; }
+  .drawing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
   .drawing-thumb {
     position: relative;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 6px;
     overflow: hidden;
-    background: var(--input);
+    background: var(--background-subtle);
     aspect-ratio: 4/3;
   }
   .drawing-thumb img { width: 100%; height: 100%; object-fit: cover; }
   .drawing-thumb .remove-btn {
     position: absolute;
-    top: 4px; right: 4px;
+    top: 6px; right: 6px;
     background: rgba(0,0,0,0.7);
-    border: none;
-    color: white;
-    border-radius: 50%;
+    border: 1px solid var(--border-strong);
+    color: var(--foreground);
+    border-radius: 4px;
     width: 22px; height: 22px;
     font-size: 14px;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     line-height: 1;
+    padding: 0;
+    transition: background 120ms ease, border-color 120ms ease;
   }
+  .drawing-thumb .remove-btn:hover { background: rgba(0,0,0,0.9); border-color: var(--foreground-muted); }
   .drawing-thumb .draw-label {
     position: absolute;
     bottom: 0; left: 0; right: 0;
-    background: rgba(0,0,0,0.6);
-    font-size: 10px;
-    color: white;
-    padding: 3px 6px;
+    background: rgba(0,0,0,0.75);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--foreground);
+    padding: 4px 8px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  /* ── GENERATE PANEL ── */
-  .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
-  .checklist li { display: flex; align-items: center; gap: 10px; font-size: 13px; }
-  .check-dot {
-    width: 20px; height: 20px;
-    border-radius: 50%;
-    background: var(--teal);
-    flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 11px;
-    color: var(--navy);
-    font-weight: 700;
+  /* ── CHECKLIST ── */
+  .checklist { list-style: none; display: flex; flex-direction: column; gap: 4px; margin-bottom: 24px; }
+  .checklist li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+    background: var(--background-subtle);
   }
-  .check-dot.miss { background: var(--border); color: var(--muted); }
-  .check-dot.warn { background: #f39c12; color: white; }
+  .check-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background: var(--success);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #ffffff;
+    font-weight: 500;
+    line-height: 1;
+  }
+  .check-dot.miss { background: transparent; border: 1px solid var(--border-strong); color: var(--foreground-subtle); }
+  .check-dot.warn { background: transparent; border: 1px solid var(--warning); color: var(--warning); }
+
+  /* ── GENERATE BUTTON ── */
   .gen-btn {
     width: 100%;
-    padding: 14px;
-    font-size: 15px;
-    font-weight: 600;
-    border-radius: 10px;
-    background: var(--teal);
-    color: var(--navy);
-    border: none;
+    height: 40px;
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--accent-foreground);
+    border: 1px solid var(--accent);
     cursor: pointer;
     font-family: inherit;
-    transition: all 0.2s;
+    transition: background 120ms ease, opacity 120ms ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
   }
-  .gen-btn:hover:not(:disabled) { background: var(--teal-d); transform: translateY(-1px); }
-  .gen-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .gen-btn:hover:not(:disabled) { background: #fafafa; }
+  .gen-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .gen-btn svg { width: 14px; height: 14px; }
+
   .progress-wrap { margin-top: 20px; display: none; }
-  .progress-bar { background: var(--border); border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 8px; }
-  .progress-fill { height: 100%; background: var(--teal); border-radius: 4px; transition: width 0.3s; width: 0%; }
-  .progress-label { font-size: 12px; color: var(--muted); }
+  .progress-bar {
+    background: var(--background-subtle);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    height: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .progress-fill { height: 100%; background: var(--foreground); transition: width 150ms ease; width: 0%; }
+  .progress-label { font-size: 12px; color: var(--foreground-muted); }
+
   .download-btn {
     display: none;
     width: 100%;
+    height: 40px;
     margin-top: 16px;
-    padding: 12px;
+    padding: 0 16px;
     font-size: 14px;
-    font-weight: 600;
-    border-radius: 10px;
-    background: var(--navy-l);
-    color: var(--teal);
-    border: 1px solid var(--teal);
+    font-weight: 500;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--foreground);
+    border: 1px solid var(--border-strong);
     cursor: pointer;
     font-family: inherit;
-    transition: all 0.2s;
+    transition: background 120ms ease, border-color 120ms ease;
     align-items: center;
     justify-content: center;
     gap: 8px;
   }
-  .download-btn:hover { background: rgba(51,187,165,0.1); }
+  .download-btn:hover { background: var(--background-hover); }
+  .download-btn svg { width: 14px; height: 14px; }
 
   /* ── TOAST ── */
   .toast {
     position: fixed;
-    bottom: 24px; left: 50%;
+    bottom: 24px;
+    left: 50%;
     transform: translateX(-50%) translateY(80px);
-    background: var(--navy-l);
+    background: var(--background-subtle);
     border: 1px solid var(--border);
-    color: var(--white);
-    padding: 10px 20px;
-    border-radius: 8px;
+    color: var(--foreground);
+    padding: 10px 16px;
+    border-radius: 6px;
     font-size: 13px;
-    transition: transform 0.3s;
+    transition: transform 150ms ease;
     z-index: 1000;
     white-space: nowrap;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
-  .toast.success { border-color: var(--teal); color: var(--teal); }
+  .toast.success { border-color: var(--border-strong); }
   .toast.error { border-color: var(--error); color: var(--error); }
 
   /* ── STATUS CHIP ── */
@@ -382,26 +584,48 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
-    color: var(--muted);
+    font-size: 13px;
+    color: var(--foreground-muted);
     margin-top: 8px;
   }
-  .status-chip.ok { color: var(--teal); }
-  .mat-header { display: grid; grid-template-columns: 1fr 1.6fr 60px 60px 80px 1fr 1fr; gap: 6px; margin-bottom: 4px; }
-  .mat-header span { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 0 9px; }
+  .status-chip.ok { color: var(--foreground); }
+
+  /* ── LINKS ── */
+  a {
+    color: var(--foreground);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: var(--foreground-subtle);
+    transition: color 120ms ease, text-decoration-color 120ms ease;
+  }
+  a:hover { color: var(--foreground); text-decoration-color: var(--foreground); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--background); }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; border: 2px solid var(--background); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--foreground-subtle); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 860px) {
+    .app { flex-direction: column; gap: 32px; padding: 24px 20px; }
+    .sidebar { width: 100%; position: static; }
+    .step-list { flex-direction: row; flex-wrap: wrap; }
+    .step-item { flex: 1 1 calc(50% - 4px); min-width: 0; }
+    .form-grid { grid-template-columns: 1fr; }
+    .mat-header, .mat-row { font-size: 11px; }
+  }
 </style>
 </head>
 <body>
 
 <div class="header">
   <div class="header-logo">
-    <div class="logo-mark">
-      <svg viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="white" stroke-width="1.5"/><circle cx="9" cy="9" r="3" fill="white"/></svg>
-    </div>
     <span class="logo-text">Okos</span>
-    <span class="logo-sub">/ Proposal Generator</span>
+    <span class="logo-sep">/</span>
+    <span class="logo-sub">Proposal Generator</span>
   </div>
-  <span class="header-badge">TECHNICAL PROPOSAL</span>
+  <span class="header-badge">Technical Proposal</span>
 </div>
 
 <div class="app">
@@ -450,16 +674,19 @@
            ondrop="handleBomDrop(event)" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')">
         <input type="file" accept=".xlsx,.xls" onchange="handleBomFile(this.files[0])">
         <div class="upload-icon">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><polyline points="14 2 14 8 20 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         </div>
-        <div class="upload-title">Drop SOW &amp; BOM Excel file here</div>
-        <div class="upload-sub">XLSX or XLS &nbsp;·&nbsp; Auto-reads project code, address, scope, and all materials</div>
+        <div class="upload-title">Drop SOW &amp; BOM Excel file</div>
+        <div class="upload-sub">XLSX or XLS · Auto-reads project code, address, scope, and materials</div>
       </div>
-      <div id="bomImportStatus" style="margin-top:10px;display:none;"></div>
+      <div id="bomImportStatus" style="margin-top:12px;display:none;"></div>
 
       <div class="btn-nav">
-        <span style="font-size:12px;color:var(--muted);">You can also fill in fields manually on the next step</span>
-        <button class="btn btn-primary" onclick="goTo(1)">Continue → Review &amp; Edit</button>
+        <span style="font-size:13px;color:var(--foreground-muted);">You can also fill in fields manually on the next step</span>
+        <button class="btn btn-primary" onclick="goTo(1)">
+          Continue
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
       </div>
     </div>
 
@@ -473,111 +700,117 @@
 
       <div class="form-grid">
         <div class="form-group">
-          <label>CLIENT / COMPANY NAME *</label>
+          <label>Client / Company Name <span class="req-mark">*</span></label>
           <input type="text" id="clientName" placeholder="e.g. The Lanesborough">
         </div>
         <div class="form-group">
-          <label>PROJECT CODE *</label>
+          <label>Project Code <span class="req-mark">*</span></label>
           <input type="text" id="projectCode" placeholder="e.g. YYC_TC-CAM_ACC">
         </div>
       </div>
 
       <div class="form-group">
-        <label>FACILITY NAME</label>
+        <label>Facility Name</label>
         <input type="text" id="facilityName" placeholder="e.g. The Lanesborough Condos">
       </div>
       <div class="form-group">
-        <label>PROJECT ADDRESS *</label>
+        <label>Project Address <span class="req-mark">*</span></label>
         <textarea id="projectLocation" rows="2" placeholder="e.g. 30 Sierra Morena Landing SW, Calgary, AB T3H 5H2"></textarea>
       </div>
       <div class="form-grid">
         <div class="form-group">
-          <label>DATE</label>
+          <label>Date</label>
           <input type="text" id="proposalDate" placeholder="e.g. March 2026">
         </div>
         <div class="form-group">
-          <label>REVISION</label>
+          <label>Revision</label>
           <input type="text" id="revision" placeholder="e.g. 1 or —">
         </div>
       </div>
 
       <!-- AI CONTENT -->
       <div class="section-label">AI-Assisted Content</div>
+      <div class="ai-helper">Click Auto-generate All Sections to fill these fields, or type manually.</div>
       <div class="form-group" style="margin-bottom:12px;">
-        <label>GEMINI API KEY <span style="color:var(--muted);font-weight:400;">— saved in your browser · <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--teal);">Get a free key →</a></span></label>
+        <label>Gemini API Key <span style="color:var(--foreground-subtle);font-weight:400;text-transform:none;letter-spacing:0;">— saved in your browser · <a href="https://aistudio.google.com/apikey" target="_blank">Get a free key →</a></span></label>
         <div style="display:flex;gap:8px;">
-          <input type="password" id="geminiApiKey" placeholder="Paste your Gemini API key here (AIza...)" style="flex:1;" oninput="saveApiKey(this.value.trim())">
+          <input type="password" id="geminiApiKey" placeholder="Paste your Gemini API key here (AIza...)" style="flex:1;font-family:var(--font-mono);font-size:13px;" oninput="saveApiKey(this.value.trim())">
           <button class="btn btn-outline btn-sm" onclick="toggleKeyVis()" id="keyVisBtn" style="flex-shrink:0;">Show</button>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px;">Stored in your browser only — never saved to the server or repo.</div>
+        <div style="font-size:12px;color:var(--foreground-muted);margin-top:6px;">Stored in your browser only — never saved to the server or repo.</div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <span style="font-size:13px;color:var(--muted);line-height:1.5;">Auto-generates all sections from your BOM scope items.<br>Import your BOM first, then click generate.</span>
-        <button class="btn btn-primary" id="genAllBtn" onclick="generateWithGemini('both')" style="white-space:nowrap;flex-shrink:0;margin-left:16px;">✦ Auto-generate All Sections</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;">
+        <span style="font-size:13px;color:var(--foreground-muted);line-height:1.5;">Auto-generates all sections from your BOM scope items.<br>Import your BOM first, then click generate.</span>
+        <button class="btn btn-primary" id="genAllBtn" onclick="generateWithGemini('both')" style="flex-shrink:0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
+          Auto-generate All Sections
+        </button>
       </div>
-      <div id="geminiStatus" style="font-size:12px;color:var(--muted);margin-bottom:12px;display:none;"></div>
+      <div id="geminiStatus" style="font-size:12px;color:var(--foreground-muted);margin-bottom:12px;display:none;"></div>
       <div class="form-group">
-        <label>EXECUTIVE OVERVIEW <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
-        <textarea id="execOverview" rows="5" placeholder="Click '✦ Auto-generate All Sections' above, or type manually..."></textarea>
-      </div>
-      <div class="form-group">
-        <label>PROJECT OVERVIEW <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
-        <textarea id="projectOverview" rows="5" placeholder="Click '✦ Auto-generate All Sections' above, or type manually..."></textarea>
-      </div>
-      <div class="form-group">
-        <label>SYSTEM ARCHITECTURE OVERVIEW <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
-        <textarea id="sysArch" rows="4" placeholder="Click '✦ Auto-generate All Sections' above, or type manually..."></textarea>
+        <label><svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>Executive Overview <span style="color:var(--foreground-subtle);font-weight:400;text-transform:none;letter-spacing:0;">— editable after generation</span></label>
+        <textarea id="execOverview" rows="5" placeholder="—"></textarea>
       </div>
       <div class="form-group">
-        <label>TECHNICAL CONSIDERATIONS <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
-        <textarea id="techConsiderations" rows="4" placeholder="Click '✦ Auto-generate All Sections' above, or type manually..."></textarea>
+        <label><svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>Project Overview <span style="color:var(--foreground-subtle);font-weight:400;text-transform:none;letter-spacing:0;">— editable after generation</span></label>
+        <textarea id="projectOverview" rows="5" placeholder="—"></textarea>
       </div>
       <div class="form-group">
-        <label>DEPENDENCIES & CLIENT RESPONSIBILITIES <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
-        <textarea id="aiDependencies" rows="4" placeholder="Click '✦ Auto-generate All Sections' above, or type manually..."></textarea>
+        <label>System Architecture Overview <span style="color:var(--foreground-subtle);font-weight:400;text-transform:none;letter-spacing:0;">— editable after generation</span></label>
+        <textarea id="sysArch" rows="4" placeholder="—"></textarea>
       </div>
       <div class="form-group">
-        <label>CONCLUSION <span style="color:var(--muted);font-weight:400;">— editable after generation</span></label>
-        <textarea id="aiConclusion" rows="4" placeholder="Click '✦ Auto-generate All Sections' above, or type manually..."></textarea>
+        <label>Technical Considerations <span style="color:var(--foreground-subtle);font-weight:400;text-transform:none;letter-spacing:0;">— editable after generation</span></label>
+        <textarea id="techConsiderations" rows="4" placeholder="—"></textarea>
+      </div>
+      <div class="form-group">
+        <label><svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>Dependencies &amp; Client Responsibilities <span style="color:var(--foreground-subtle);font-weight:400;text-transform:none;letter-spacing:0;">— editable after generation</span></label>
+        <textarea id="aiDependencies" rows="4" placeholder="—"></textarea>
+      </div>
+      <div class="form-group">
+        <label><svg class="label-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>Conclusion <span style="color:var(--foreground-subtle);font-weight:400;text-transform:none;letter-spacing:0;">— editable after generation</span></label>
+        <textarea id="aiConclusion" rows="4" placeholder="—"></textarea>
       </div>
       <div class="section-label">Okos Scope of Work</div>
       <div id="okosScope"></div>
-      <button class="btn btn-outline btn-sm" onclick="addScope('okos')" style="margin-top:4px;">+ Add Item</button>
+      <button class="btn btn-outline btn-sm" onclick="addScope('okos')" style="margin-top:8px;">+ Add Item</button>
 
       <!-- CLIENT SCOPE -->
       <div class="section-label">Client Scope of Work</div>
       <div id="clientScope"></div>
-      <button class="btn btn-outline btn-sm" onclick="addScope('client')" style="margin-top:4px;">+ Add Item</button>
+      <button class="btn btn-outline btn-sm" onclick="addScope('client')" style="margin-top:8px;">+ Add Item</button>
 
       <!-- ASSUMPTIONS -->
       <div class="section-label">Assumptions</div>
       <div id="assumptions"></div>
-      <button class="btn btn-outline btn-sm" onclick="addScope('assumption')" style="margin-top:4px;">+ Add Item</button>
+      <button class="btn btn-outline btn-sm" onclick="addScope('assumption')" style="margin-top:8px;">+ Add Item</button>
 
       <!-- OKOS MATERIALS -->
       <div class="section-label">Okos Supplied Materials</div>
-      <div class="mat-header">
-        <span>Description</span><span>Specification</span><span>Qty</span><span>Unit</span><span>MSRP</span><span>Notes</span><span>Ref URL</span>
+      <div class="mat-header" id="okosMatHeader" style="display:none;">
+        <span>Description</span><span>Specification</span><span>Qty</span><span>Unit</span><span>MSRP</span><span>Notes</span><span>Ref URL</span><span></span>
       </div>
+      <div id="okosMatEmpty" class="mat-empty">No materials added yet</div>
       <div id="okosMats"></div>
-      <button class="btn btn-outline btn-sm" onclick="addMat('okos')" style="margin-top:4px;">+ Add Material</button>
-      <div id="okosTotal" style="text-align:right;font-size:12px;color:var(--muted);margin-top:8px;display:none;">
-        Total: <strong id="okosTotalVal" style="color:var(--teal);"></strong>
+      <button class="btn btn-outline btn-sm" onclick="addMat('okos')" style="margin-top:8px;">+ Add Material</button>
+      <div id="okosTotal" style="text-align:right;font-size:13px;color:var(--foreground-muted);margin-top:12px;display:none;">
+        Total: <strong id="okosTotalVal" style="color:var(--foreground);font-family:var(--font-mono);font-weight:500;"></strong>
       </div>
 
       <!-- CLIENT MATERIALS -->
       <div class="section-label">Client Supplied Materials</div>
-      <div class="mat-header" style="grid-template-columns:1fr 1.6fr 60px 60px 1fr 1fr;gap:6px;">
-        <span>Description</span><span>Specification</span><span>Qty</span><span>Unit</span><span>Notes</span><span>Ref URL</span>
+      <div class="mat-header" id="clientMatHeader" style="display:none;grid-template-columns:1fr 1.6fr 60px 60px 1fr 1fr 32px;gap:6px;">
+        <span>Description</span><span>Specification</span><span>Qty</span><span>Unit</span><span>Notes</span><span>Ref URL</span><span></span>
       </div>
+      <div id="clientMatEmpty" class="mat-empty">No materials added yet</div>
       <div id="clientMats"></div>
-      <button class="btn btn-outline btn-sm" onclick="addMat('client')" style="margin-top:4px;">+ Add Material</button>
+      <button class="btn btn-outline btn-sm" onclick="addMat('client')" style="margin-top:8px;">+ Add Material</button>
 
       <!-- OTHERS -->
       <div class="section-label">Others</div>
       <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;">
         <div class="form-group" style="margin:0;">
-          <label>PERMITTING</label>
+          <label>Permitting</label>
           <select id="permitting">
             <option>Not Required</option>
             <option>Required</option>
@@ -585,7 +818,7 @@
           </select>
         </div>
         <div class="form-group" style="margin:0;">
-          <label>LIFT REQUIREMENT</label>
+          <label>Lift Requirement</label>
           <select id="lift">
             <option>Not Required</option>
             <option>Required</option>
@@ -595,7 +828,7 @@
           </select>
         </div>
         <div class="form-group" style="margin:0;">
-          <label>BULKY HANDLING</label>
+          <label>Bulky Handling</label>
           <select id="bulky">
             <option>Not Required</option>
             <option>Required</option>
@@ -603,14 +836,20 @@
           </select>
         </div>
       </div>
-      <div class="form-group" style="margin-top:12px;">
-        <label>ADDITIONAL NOTES</label>
+      <div class="form-group" style="margin-top:16px;">
+        <label>Additional Notes</label>
         <textarea id="additionalNotes" rows="2" placeholder="Any other notes or conditions..."></textarea>
       </div>
 
       <div class="btn-nav">
-        <button class="btn btn-ghost" onclick="goTo(0)">← Back</button>
-        <button class="btn btn-primary" onclick="goTo(2)">Continue → Drawings</button>
+        <button class="btn btn-ghost" onclick="goTo(0)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <button class="btn btn-primary" onclick="goTo(2)">
+          Continue
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
       </div>
     </div>
 
@@ -624,18 +863,24 @@
            ondrop="handleDrawingDrop(event)" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')">
         <input type="file" accept="image/png,image/jpeg,image/jpg,application/pdf" multiple onchange="handleDrawingFiles(this.files)">
         <div class="upload-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
         </div>
         <div class="upload-title">Drop drawings here</div>
         <div class="upload-sub">PNG, JPG or PDF · Multiple files supported · PDF pages rendered automatically</div>
       </div>
 
       <div id="drawingGrid" class="drawing-grid"></div>
-      <div id="drawingCount" style="font-size:12px;color:var(--muted);margin-top:8px;"></div>
+      <div id="drawingCount" style="font-size:13px;color:var(--foreground-muted);margin-top:12px;"></div>
 
       <div class="btn-nav">
-        <button class="btn btn-ghost" onclick="goTo(1)">← Back</button>
-        <button class="btn btn-primary" onclick="goTo(3)">Continue → Generate</button>
+        <button class="btn btn-ghost" onclick="goTo(1)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <button class="btn btn-primary" onclick="goTo(3)">
+          Continue
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
       </div>
     </div>
 
@@ -648,7 +893,7 @@
       <ul class="checklist" id="checklist"></ul>
 
       <button class="gen-btn" id="genBtn" onclick="generateProposal()" disabled>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         Generate Technical Proposal
       </button>
 
@@ -658,13 +903,16 @@
       </div>
 
       <button class="download-btn" id="downloadBtn" onclick="downloadDocx()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download DOCX
       </button>
 
       <div class="btn-nav">
-        <button class="btn btn-ghost" onclick="goTo(2)">← Back</button>
-        <button class="btn btn-ghost btn-sm" onclick="resetAll()" style="color:var(--error);border-color:var(--border);">Reset All</button>
+        <button class="btn btn-ghost" onclick="goTo(2)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="resetAll()" style="color:var(--error);">Reset All</button>
       </div>
     </div>
 
@@ -776,10 +1024,11 @@ Write in third person. Be specific and technical but accessible. Do not use bull
 
   const btn = document.getElementById('genAllBtn');
   const statusEl = document.getElementById('geminiStatus');
+  const sparkleSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>';
   btn.disabled = true;
-  btn.textContent = '...generating';
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Generating…';
   statusEl.style.display = 'block';
-  statusEl.style.color = 'var(--muted)';
+  statusEl.style.color = 'var(--foreground-muted)';
 
   const callGemini = async (prompt) => {
     const res = await fetch(
@@ -876,7 +1125,7 @@ Write strictly in third person — never use we, our, or us. Do not use bullet p
     document.getElementById('aiConclusion').value = conclusionText;
 
     statusEl.textContent = '\u2713 All 6 sections generated \u2014 review and edit as needed';
-    statusEl.style.color = 'var(--teal)';
+    statusEl.style.color = 'var(--foreground)';
     showToast('All sections generated successfully', 'success');
   } catch(err) {
     statusEl.textContent = '\u2717 Error: ' + err.message;
@@ -884,12 +1133,15 @@ Write strictly in third person — never use we, our, or us. Do not use bullet p
     showToast('Gemini error: ' + err.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = '\u2726 Auto-generate All Sections';
+    btn.innerHTML = sparkleSvg + ' Auto-generate All Sections';
   }
 }
 
-// Load saved API key on page load
-window.addEventListener('DOMContentLoaded', loadApiKey);
+// Load saved API key + render empty-state rows on page load
+window.addEventListener('DOMContentLoaded', () => {
+  loadApiKey();
+  updateMatTableState();
+});
 // NAVIGATION
 // ═══════════════════════════════════════════════
 function goTo(step) {
@@ -937,7 +1189,7 @@ function addMat(type, data = {}) {
     : `<input type="text" placeholder="—" id="${type}-mat-price-${id}" value="" style="visibility:hidden;">`;
 
   if (type === 'client') {
-    div.style.gridTemplateColumns = '1fr 1.6fr 60px 60px 1fr 1fr';
+    div.style.gridTemplateColumns = '1fr 1.6fr 60px 60px 1fr 1fr 32px';
     div.innerHTML = `
       <input type="text" placeholder="Description" id="${type}-mat-desc-${id}" value="${esc(data.desc||'')}">
       <input type="text" placeholder="Specification" id="${type}-mat-spec-${id}" value="${esc(data.spec||'')}">
@@ -945,10 +1197,10 @@ function addMat(type, data = {}) {
       <input type="text" placeholder="Unit" id="${type}-mat-unit-${id}" value="${esc(data.unit||'')}">
       <input type="text" placeholder="Notes" id="${type}-mat-notes-${id}" value="${esc(data.notes||'')}">
       <input type="url" placeholder="Ref URL" id="${type}-mat-url-${id}" value="${esc(data.url||'')}">
-      <button class="btn btn-danger btn-sm" onclick="this.closest('.mat-row').remove();updateTotal()">×</button>
+      <button class="btn btn-danger btn-sm" onclick="this.closest('.mat-row').remove();updateTotal();updateMatTableState()">×</button>
     `;
-    div.style.gridTemplateColumns = '1fr 1.6fr 60px 60px 1fr 1fr auto';
   } else {
+    div.style.gridTemplateColumns = '1fr 1.6fr 60px 60px 80px 1fr 1fr 32px';
     div.innerHTML = `
       <input type="text" placeholder="Description" id="${type}-mat-desc-${id}" value="${esc(data.desc||'')}">
       <input type="text" placeholder="Specification" id="${type}-mat-spec-${id}" value="${esc(data.spec||'')}">
@@ -958,11 +1210,23 @@ function addMat(type, data = {}) {
       <input type="text" placeholder="Notes" id="${type}-mat-notes-${id}" value="${esc(data.notes||'')}">
       <input type="url" placeholder="Ref URL" id="${type}-mat-url-${id}" value="${esc(data.url||'')}">
       <input type="hidden" id="${type}-mat-loc-${id}" value="${esc(data.location||'')}">
-      <button class="btn btn-danger btn-sm" onclick="this.closest('.mat-row').remove();updateTotal()">×</button>
+      <button class="btn btn-danger btn-sm" onclick="this.closest('.mat-row').remove();updateTotal();updateMatTableState()">×</button>
     `;
-    div.style.gridTemplateColumns = '1fr 1.6fr 60px 60px 80px 1fr 1fr auto';
   }
   container.appendChild(div);
+  updateMatTableState();
+}
+
+function updateMatTableState() {
+  for (const type of ['okos', 'client']) {
+    const container = document.getElementById(type + 'Mats');
+    const header = document.getElementById(type + 'MatHeader');
+    const empty = document.getElementById(type + 'MatEmpty');
+    if (!container || !header || !empty) continue;
+    const hasRows = container.children.length > 0;
+    header.style.display = hasRows ? 'grid' : 'none';
+    empty.style.display = hasRows ? 'none' : 'block';
+  }
 }
 
 function updateTotal() {
@@ -1421,7 +1685,7 @@ function buildChecklist() {
     <li>
       <div class="check-dot ${item.ok ? '' : item.warn ? 'warn' : 'miss'}">${item.ok ? '✓' : item.warn ? '!' : '×'}</div>
       <span>${item.label}</span>
-      <span style="margin-left:auto;font-size:11px;color:var(--muted);">${item.val}</span>
+      <span style="margin-left:auto;font-size:12px;color:var(--foreground-muted);font-family:var(--font-mono);">${item.val}</span>
     </li>
   `).join('');
   const canGen = !!d.clientName && !!d.projectCode && !!d.projectLocation;
@@ -1439,7 +1703,7 @@ function setProgress(pct, label) {
 async function generateProposal() {
   const genBtn = document.getElementById('genBtn');
   genBtn.disabled = true;
-  genBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Building...';
+  genBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Building...';
   document.getElementById('progressWrap').style.display = 'block';
   document.getElementById('downloadBtn').style.display = 'none';
 
@@ -1457,7 +1721,7 @@ async function generateProposal() {
     setProgress(0, '');
     document.getElementById('progressWrap').style.display = 'none';
     genBtn.disabled = false;
-    genBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Generate Technical Proposal';
+    genBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Generate Technical Proposal';
     showToast('Error: ' + err.message, 'error');
     console.error(err);
   }
