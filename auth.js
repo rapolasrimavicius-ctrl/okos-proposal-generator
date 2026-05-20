@@ -111,7 +111,7 @@ function resetLoginForm() {
   if (form) form.style.display = '';
   if (sent) sent.style.display = 'none';
   const submit = document.getElementById('loginSubmit');
-  if (submit) { submit.disabled = false; submit.textContent = 'Send magic link'; }
+  if (submit) { submit.disabled = false; submit.textContent = 'Continue'; }
   const errEl = document.getElementById('loginError');
   if (errEl) errEl.textContent = '';
 }
