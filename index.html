@@ -1533,11 +1533,10 @@ Write strictly in third person — never use we, our, or us. Do not use bullet p
     showToast('Gemini error: ' + err.message, 'error');
     // onAiFailed already called inside callGemini for proxy failures; this catch handles any other unexpected error
   } finally {
-    // Always log + save whatever was generated, even on partial failure.
     // Use flushSnapshot (immediate) instead of the 800ms debounce so AI
-    // content is durable the moment generation completes.
+    // content is durable the moment generation completes — even on partial
+    // failure. No separate audit event; failures still emit error.gemini.
     if (generated.length > 0) {
-      window.Okos?.onAiGenerated?.({ sections: generated, model: GEMINI_MODEL });
       window.Okos?.flushSnapshot?.();
     }
     btn.disabled = false;

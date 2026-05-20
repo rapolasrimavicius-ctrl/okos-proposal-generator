@@ -46,7 +46,6 @@ function exposeApi() {
     toast,
     onBomImported,
     onBomImportFailed,
-    onAiGenerated,
     onAiFailed,
     onExportSucceeded,
     onExportFailed,
@@ -121,15 +120,11 @@ async function saveSnapshotNow(opts = {}) {
 
 // ── Trigger hooks for the inline wizard ─────────────────────────────────
 
-async function onBomImported({ filename, itemCount, sheetNames }) {
-  const id = await ensureProposal('bom_import');
-  await saveSnapshotNow({ force: true }); // immediate save once the BOM lands
-  logEvent({
-    level: 'info', type: 'bom.imported',
-    message: `BOM imported: ${filename}`,
-    context: { filename, item_count: itemCount, sheet_names: sheetNames },
-    proposalId: id,
-  });
+async function onBomImported(/* { filename, itemCount, sheetNames } */) {
+  // We still create the proposal and force-save the snapshot on a BOM import —
+  // we just don't write a separate audit event for the import itself.
+  await ensureProposal('bom_import');
+  await saveSnapshotNow({ force: true });
 }
 
 function onBomImportFailed({ filename, stage, message }) {
@@ -140,15 +135,6 @@ function onBomImportFailed({ filename, stage, message }) {
     proposalId: state.proposalId,
   });
   toast({ level: 'error', message: message || 'Could not parse BOM.' });
-}
-
-function onAiGenerated({ sections, model }) {
-  logEvent({
-    level: 'info', type: 'ai.generated',
-    message: `AI generated ${sections.length} sections`,
-    context: { sections, model },
-    proposalId: state.proposalId,
-  });
 }
 
 function onAiFailed({ status, code, endpoint, message }) {

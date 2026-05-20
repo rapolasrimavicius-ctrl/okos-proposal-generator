@@ -133,8 +133,6 @@ Every interesting action inserts a row into `events`. Logging is best-effort —
 | Trigger | Level | Type |
 |---|---|---|
 | Proposal row created | info | `proposal.created` |
-| BOM Excel parsed | info | `bom.imported` |
-| Auto-generate succeeded | info | `ai.generated` |
 | DOCX downloaded | info | `proposal.exported` |
 | Gemini proxy returns non-2xx | error | `error.gemini` |
 | BOM parse throws | error | `error.bom_parse` |
