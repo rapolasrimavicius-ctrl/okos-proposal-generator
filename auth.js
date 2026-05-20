@@ -10,12 +10,12 @@ const LOGIN_HTML = `
     <form class="login-form" id="loginForm">
       <input type="email" id="loginEmail" placeholder="you@company.com" autocomplete="email" required>
       <button class="btn btn-primary" id="loginSubmit" type="submit" style="width:100%;justify-content:center;">
-        Send magic link
+        Continue
       </button>
       <div class="login-error" id="loginError"></div>
     </form>
     <div class="login-sent" id="loginSent" style="display:none;">
-      Check your inbox — we sent a link to <strong id="loginSentEmail"></strong>.
+      Check your inbox — we sent a sign-in link to <strong id="loginSentEmail"></strong>.
     </div>
   </div>
 `;
@@ -93,9 +93,14 @@ function attachLoginHandlers() {
       document.getElementById('loginForm').style.display = 'none';
       document.getElementById('loginSent').style.display = 'block';
     } catch (err) {
-      errEl.textContent = err?.message || 'Could not send magic link.';
+      // Friendly copy when Pattern A (invite-only) blocks an uninvited email.
+      const msg = String(err?.message || '');
+      const friendly = /signups? not allowed|user not allowed/i.test(msg)
+        ? "This email isn't on the access list. Ask your admin to invite you."
+        : (err?.message || 'Could not send sign-in link.');
+      errEl.textContent = friendly;
       submit.disabled = false;
-      submit.textContent = 'Send magic link';
+      submit.textContent = 'Continue';
     }
   });
 }
