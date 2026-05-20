@@ -1661,7 +1661,7 @@ function handleBomDrop(e) {
 function handleBomFile(file) {
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     try {
       const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
       const sheetName = wb.SheetNames.find(n => /sow.*bom|bom.*sow/i.test(n)) || wb.SheetNames.find(n => /bom/i.test(n)) || wb.SheetNames[0];
@@ -1835,7 +1835,18 @@ function handleBomFile(file) {
       }
 
       // ── Extract embedded images from all sheets ──
-      extractBomImages(e.target.result, wb.SheetNames);
+      // Awaited so the user can't reach the Generate step before drawings
+      // are pulled out of the BOM (site maps, layout images, etc.).
+      const statusEl = document.getElementById('bomImportStatus');
+      if (statusEl && filled.length > 0) {
+        statusEl.innerHTML += `<br><span class="status-chip">… Extracting drawings from BOM</span>`;
+      }
+      await extractBomImages(e.target.result, wb.SheetNames);
+      // Remove the transient "extracting…" pill (the success pill, if any, was
+      // appended by extractBomImages itself).
+      if (statusEl) {
+        statusEl.innerHTML = statusEl.innerHTML.replace(/<br><span class="status-chip">… Extracting drawings from BOM<\/span>/, '');
+      }
 
     } catch(err) {
       showToast('Could not parse file: ' + err.message, 'error');
@@ -1850,12 +1861,38 @@ async function extractBomImages(arrayBuffer, sheetNames) {
   try {
     const zip = await JSZip.loadAsync(arrayBuffer);
 
-    // Build a map of drawing relationships: sheet index → [media filenames]
-    // xl/worksheets/sheet1.xml → xl/drawings/drawing1.xml → xl/drawings/_rels/drawing1.xml.rels → xl/media/imageN.xxx
-    const sheetImageMap = {}; // sheetIndex → Set of media paths
+    // ── Build robust sheet-name → worksheet file mapping ──
+    // The naming pattern `xl/worksheets/sheet${i+1}.xml` is NOT guaranteed to
+    // match workbook display order — sheets that have been reordered, renamed,
+    // or recreated can have arbitrary file numbers. Use xl/workbook.xml +
+    // xl/_rels/workbook.xml.rels to resolve correctly.
+    const sheetNameToFile = {}; // 'Sheet Name' → 'xl/worksheets/sheetN.xml'
+    try {
+      const workbookXml = await zip.file('xl/workbook.xml')?.async('string');
+      const workbookRelsXml = await zip.file('xl/_rels/workbook.xml.rels')?.async('string');
+      if (workbookXml && workbookRelsXml) {
+        const ridToTarget = {};
+        for (const m of workbookRelsXml.matchAll(/<Relationship\s+Id="([^"]+)"[^>]*Target="([^"]+)"/g)) {
+          ridToTarget[m[1]] = m[2];
+        }
+        for (const m of workbookXml.matchAll(/<sheet\b[^/]*\bname="([^"]+)"[^/]*\br:id="([^"]+)"/g)) {
+          const name = m[1].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+          const target = ridToTarget[m[2]];
+          if (target) {
+            const path = target.startsWith('/') ? target.slice(1) : `xl/${target}`;
+            sheetNameToFile[name] = path;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('workbook.xml lookup failed, falling back to positional mapping:', e);
+    }
 
-    for (let si = 0; si < sheetNames.length; si++) {
-      const sheetRelsPath = `xl/worksheets/_rels/sheet${si+1}.xml.rels`;
+    // Map each sheet to its list of media paths (only sheets with drawings).
+    const sheetMediaMap = {}; // sheetName → [media path]
+    for (const sheetName of sheetNames) {
+      const sheetPath = sheetNameToFile[sheetName] || `xl/worksheets/sheet${sheetNames.indexOf(sheetName) + 1}.xml`;
+      const sheetRelsPath = sheetPath.replace(/worksheets\/(sheet\d+\.xml)$/, 'worksheets/_rels/$1.rels');
       const relsFile = zip.file(sheetRelsPath);
       if (!relsFile) continue;
 
@@ -1864,24 +1901,19 @@ async function extractBomImages(arrayBuffer, sheetNames) {
       if (!drawingMatch) continue;
 
       const drawingName = drawingMatch[1];
-      const drawingRelsPath = `xl/drawings/_rels/${drawingName}.rels`;
-      const drawingRelsFile = zip.file(drawingRelsPath);
+      const drawingRelsFile = zip.file(`xl/drawings/_rels/${drawingName}.rels`);
       if (!drawingRelsFile) continue;
 
       const drawingRelsXml = await drawingRelsFile.async('string');
       const mediaMatches = [...drawingRelsXml.matchAll(/Target="\.\.\/media\/([^"]+)"/g)];
       if (!mediaMatches.length) continue;
 
-      sheetImageMap[si] = mediaMatches.map(m => `xl/media/${m[1]}`);
+      sheetMediaMap[sheetName] = mediaMatches.map(m => `xl/media/${m[1]}`);
     }
 
-    // For each sheet that has images, find the largest one above threshold
+    // For each sheet that has images, find the largest one above threshold.
     let extractedCount = 0;
-    for (const [siStr, mediaPaths] of Object.entries(sheetImageMap)) {
-      const si = parseInt(siStr);
-      const sheetName = sheetNames[si];
-
-      // Get sizes and filter
+    for (const [sheetName, mediaPaths] of Object.entries(sheetMediaMap)) {
       const candidates = [];
       for (const mediaPath of mediaPaths) {
         const f = zip.file(mediaPath);
@@ -1891,10 +1923,8 @@ async function extractBomImages(arrayBuffer, sheetNames) {
           candidates.push({ mediaPath, buf, size: buf.byteLength });
         }
       }
-
       if (!candidates.length) continue;
 
-      // Take the largest image from this sheet
       candidates.sort((a, b) => b.size - a.size);
       const { mediaPath, buf } = candidates[0];
       const ext = mediaPath.split('.').pop().toLowerCase();
@@ -1909,11 +1939,13 @@ async function extractBomImages(arrayBuffer, sheetNames) {
     if (extractedCount > 0) {
       renderDrawings();
       const status = document.getElementById('bomImportStatus');
-      status.innerHTML += `<br><span class="status-chip ok">✓ Auto-extracted ${extractedCount} drawing${extractedCount > 1 ? 's' : ''} from BOM sheets</span>`;
+      if (status) status.innerHTML += `<br><span class="status-chip ok">✓ Auto-extracted ${extractedCount} drawing${extractedCount > 1 ? 's' : ''} from BOM sheets</span>`;
       showToast(`${extractedCount} drawing${extractedCount > 1 ? 's' : ''} extracted from BOM`, 'success');
     }
+    return extractedCount;
   } catch(err) {
     console.warn('Image extraction failed:', err);
+    return 0;
   }
 }
 
