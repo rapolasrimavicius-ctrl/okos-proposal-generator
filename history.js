@@ -4,14 +4,13 @@ import {
   listProposals, listEvents, getProposal, deleteProposal,
   fetchProposalLabels, restoreSnapshot,
 } from './db.js';
-import { logEvent } from './logger.js';
 
 const PAGE_SIZE = 50;
 
 const state = {
   tab: 'proposals',       // 'proposals' | 'activity'
   search: '',
-  levelFilter: 'all',     // 'all' | 'info' | 'warn' | 'error'
+  levelFilter: 'error',   // 'all' | 'info' | 'warn' | 'error' — default to actionable rows
   events: [],
   eventsExhausted: false,
   proposalLabels: {},     // id → { client_name, project_code }
@@ -114,7 +113,6 @@ async function drawProposalList() {
         const full = await getProposal(id);
         restoreSnapshot(full.snapshot || {});
         _onOpenProposal?.(full);
-        logEvent({ level: 'info', type: 'proposal.opened', message: 'Opened from history', context: { from: 'history' }, proposalId: id });
       } catch (err) {
         console.warn('open proposal failed', err);
       }
@@ -248,7 +246,6 @@ async function loadActivity({ replace }) {
         const full = await getProposal(id);
         restoreSnapshot(full.snapshot || {});
         _onOpenProposal?.(full);
-        logEvent({ level: 'info', type: 'proposal.opened', message: 'Opened from activity', context: { from: 'activity' }, proposalId: id });
       } catch (err) { console.warn('open from activity failed', err); }
     });
   });
