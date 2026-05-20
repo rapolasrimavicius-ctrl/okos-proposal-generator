@@ -1,0 +1,14 @@
+# Local Supabase config — contains project URL + anon key. Copy config.example.js → config.js.
+config.js
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Node (in case anyone runs the Supabase CLI here)
+node_modules/
+
+# Supabase CLI local state
+.supabase/

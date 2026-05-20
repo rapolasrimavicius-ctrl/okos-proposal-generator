@@ -606,6 +606,312 @@
   ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; border: 2px solid var(--background); }
   ::-webkit-scrollbar-thumb:hover { background: var(--foreground-subtle); }
 
+  /* ── HEADER RIGHT — user slot + history link + badge ── */
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .header-link {
+    font-size: 13px;
+    color: var(--foreground-muted);
+    text-decoration: none;
+    transition: color 120ms ease;
+    cursor: pointer;
+  }
+  .header-link:hover { color: var(--foreground); text-decoration: none; }
+  .header-link.active { color: var(--foreground); }
+  .header-user { display: flex; align-items: center; gap: 8px; }
+  .header-user .user-email {
+    font-size: 12px;
+    color: var(--foreground-muted);
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .header-user .user-signout {
+    font-size: 12px;
+    color: var(--foreground-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: transparent;
+    transition: text-decoration-color 120ms ease, color 120ms ease;
+  }
+  .header-user .user-signout:hover { color: var(--foreground); text-decoration-color: var(--foreground); }
+
+  /* ── APP STATE VISIBILITY ── */
+  body.app-state-loading .header,
+  body.app-state-loading .app,
+  body.app-state-loading .history-wrap { display: none; }
+  body.app-state-login .header,
+  body.app-state-login .app,
+  body.app-state-login .history-wrap { display: none; }
+  body.app-state-login #loginOverlay { display: flex; }
+  body.app-state-app #loginOverlay,
+  body.app-state-history #loginOverlay { display: none; }
+  body.app-state-app .history-wrap { display: none; }
+  body.app-state-history .app { display: none; }
+  body.app-state-history .history-wrap { display: block; }
+  body:not(.app-state-history) .history-wrap { display: none; }
+
+  /* ── LOGIN OVERLAY ── */
+  .login-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--background);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 200;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 380px;
+    background: var(--background-subtle);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+  }
+  .login-mark {
+    font-size: 13px;
+    color: var(--foreground-subtle);
+    margin-bottom: 24px;
+  }
+  .login-mark span { color: var(--foreground-muted); }
+  .login-title {
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--foreground);
+    margin-bottom: 6px;
+  }
+  .login-sub {
+    font-size: 13px;
+    color: var(--foreground-muted);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+  .login-form { display: flex; flex-direction: column; gap: 12px; }
+  .login-error {
+    font-size: 13px;
+    color: var(--error);
+    min-height: 18px;
+    line-height: 1.4;
+  }
+  .login-sent {
+    font-size: 13px;
+    color: var(--foreground-muted);
+    line-height: 1.5;
+  }
+  .login-sent strong { color: var(--foreground); font-weight: 500; }
+
+  /* ── HISTORY VIEW ── */
+  .history-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 24px 32px 80px;
+  }
+  .hist-topbar { margin-bottom: 24px; }
+  .hist-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: var(--foreground-muted);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 0;
+    transition: color 120ms ease;
+  }
+  .hist-back:hover { color: var(--foreground); }
+  .hist-back svg { width: 14px; height: 14px; }
+
+  .hist-tabs {
+    display: flex;
+    gap: 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .hist-tab {
+    background: transparent;
+    border: none;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--foreground-muted);
+    padding: 0 0 16px;
+    margin-bottom: -1px;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease;
+  }
+  .hist-tab:hover { color: var(--foreground); }
+  .hist-tab.active { color: var(--foreground); border-bottom-color: var(--foreground); }
+
+  .hist-toolbar { margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .hist-search { width: 280px; }
+  .hist-toolbar-chips { gap: 8px; }
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    color: var(--foreground-muted);
+    border: 1px solid var(--border);
+    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  }
+  .filter-chip:hover { background: var(--background-hover); color: var(--foreground); }
+  .filter-chip.active {
+    background: var(--accent);
+    color: var(--accent-foreground);
+    border-color: var(--accent);
+  }
+
+  .hist-table { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .hist-thead {
+    display: grid;
+    grid-template-columns: 110px 1.4fr 1fr 100px 130px 40px;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--background-subtle);
+    border-bottom: 1px solid var(--border);
+  }
+  .hist-thead span {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--foreground-subtle);
+  }
+  .hist-row {
+    display: grid;
+    grid-template-columns: 110px 1.4fr 1fr 100px 130px 40px;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: background 120ms ease;
+  }
+  .hist-row:last-child { border-bottom: none; }
+  .hist-row:hover { background: var(--background-hover); }
+  .hist-cell { font-size: 13px; color: var(--foreground); overflow: hidden; text-overflow: ellipsis; }
+  .hist-cell-client { color: var(--foreground); }
+  .hist-cell-code { font-family: var(--font-mono); color: var(--foreground-muted); font-size: 12px; }
+  .hist-row-actions { display: flex; justify-content: flex-end; opacity: 0; transition: opacity 120ms ease; }
+  .hist-row:hover .hist-row-actions { opacity: 1; }
+  .row-kebab {
+    width: 28px; height: 28px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--foreground-muted);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  }
+  .row-kebab:hover { background: var(--background-subtle); border-color: var(--border); color: var(--foreground); }
+  .row-kebab svg { width: 14px; height: 14px; }
+
+  .hist-table-activity .hist-thead,
+  .hist-table-activity .hist-row {
+    grid-template-columns: 110px 60px 200px 1fr 1fr;
+  }
+  .level-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    display: inline-block;
+    background: var(--foreground-subtle);
+  }
+  .level-dot.dot-info  { background: var(--foreground-subtle); }
+  .level-dot.dot-warn  { background: var(--warning); }
+  .level-dot.dot-error { background: var(--error); }
+
+  .activity-proposal {
+    color: var(--foreground-muted);
+    cursor: pointer;
+    transition: color 120ms ease;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: transparent;
+  }
+  .activity-proposal:hover { color: var(--foreground); text-decoration-color: var(--foreground); }
+  .activity-proposal-empty { color: var(--foreground-subtle); }
+
+  .hist-empty {
+    text-align: center;
+    color: var(--foreground-subtle);
+    font-size: 13px;
+    padding: 80px 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .hist-loading { color: var(--foreground-subtle); padding: 16px; font-size: 13px; }
+  .hist-more-wrap { margin-top: 16px; display: flex; justify-content: center; }
+
+  /* ── STATUS PILLS (history table) ── */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+    border: 1px solid var(--border-strong);
+    color: var(--foreground-muted);
+    line-height: 1.4;
+  }
+  .status-pill-draft { color: var(--foreground-muted); border-color: var(--border-strong); }
+  .status-pill-exported { color: var(--success); border-color: var(--success); }
+
+  /* ── APP-LEVEL TOAST (errors / warnings from the module layer) ── */
+  .app-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    background: var(--background-subtle);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--foreground);
+    z-index: 1000;
+    max-width: 360px;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: opacity 150ms ease, transform 150ms ease;
+  }
+  .app-toast.show { display: flex; opacity: 1; transform: translateY(0); }
+  .app-toast-error { border-color: var(--error); }
+  .app-toast-warn  { border-color: var(--warning); }
+  .app-toast-close {
+    background: transparent;
+    border: none;
+    color: var(--foreground-muted);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    transition: color 120ms ease;
+  }
+  .app-toast-close:hover { color: var(--foreground); }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 860px) {
     .app { flex-direction: column; gap: 32px; padding: 24px 20px; }
@@ -614,10 +920,16 @@
     .step-item { flex: 1 1 calc(50% - 4px); min-width: 0; }
     .form-grid { grid-template-columns: 1fr; }
     .mat-header, .mat-row { font-size: 11px; }
+    .header-right { gap: 10px; }
+    .header-user .user-email { max-width: 120px; }
+    .hist-thead, .hist-row { grid-template-columns: 90px 1fr 1fr 80px 40px; }
+    .hist-thead span:nth-child(5), .hist-row .hist-cell:nth-child(5) { display: none; }
+    .hist-table-activity .hist-thead, .hist-table-activity .hist-row { grid-template-columns: 90px 40px 1fr 1fr; }
+    .hist-table-activity .hist-thead span:nth-child(3), .hist-table-activity .hist-row .hist-cell:nth-child(3) { display: none; }
   }
 </style>
 </head>
-<body>
+<body class="app-state-loading">
 
 <div class="header">
   <div class="header-logo">
@@ -625,7 +937,11 @@
     <span class="logo-sep">/</span>
     <span class="logo-sub">Proposal Generator</span>
   </div>
-  <span class="header-badge">Technical Proposal</span>
+  <div class="header-right">
+    <a class="header-link" id="headerHistoryLink" href="#" role="button">History</a>
+    <div class="header-user" id="headerUserSlot"></div>
+    <span class="header-badge">Technical Proposal</span>
+  </div>
 </div>
 
 <div class="app">
@@ -731,14 +1047,6 @@
       <!-- AI CONTENT -->
       <div class="section-label">AI-Assisted Content</div>
       <div class="ai-helper">Click Auto-generate All Sections to fill these fields, or type manually.</div>
-      <div class="form-group" style="margin-bottom:12px;">
-        <label>Gemini API Key <span style="color:var(--foreground-subtle);font-weight:400;text-transform:none;letter-spacing:0;">— saved in your browser · <a href="https://aistudio.google.com/apikey" target="_blank">Get a free key →</a></span></label>
-        <div style="display:flex;gap:8px;">
-          <input type="password" id="geminiApiKey" placeholder="Paste your Gemini API key here (AIza...)" style="flex:1;font-family:var(--font-mono);font-size:13px;" oninput="saveApiKey(this.value.trim())">
-          <button class="btn btn-outline btn-sm" onclick="toggleKeyVis()" id="keyVisBtn" style="flex-shrink:0;">Show</button>
-        </div>
-        <div style="font-size:12px;color:var(--foreground-muted);margin-top:6px;">Stored in your browser only — never saved to the server or repo.</div>
-      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;">
         <span style="font-size:13px;color:var(--foreground-muted);line-height:1.5;">Auto-generates all sections from your BOM scope items.<br>Import your BOM first, then click generate.</span>
         <button class="btn btn-primary" id="genAllBtn" onclick="generateWithGemini('both')" style="flex-shrink:0;">
@@ -919,6 +1227,9 @@
   </main>
 </div>
 
+<!-- History view (mounted by app.js when active) -->
+<div class="history-wrap" id="historyView"></div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -932,38 +1243,19 @@ let okosMatCount = 0, clientMatCount = 0;
 let generatedDocx = null;
 
 // ═══════════════════════════════════════════════
-// GEMINI API
+// GEMINI API — calls server-side proxy via window.Okos.gemini.
+// The Gemini key lives in Supabase as a function secret; never in the browser.
 // ═══════════════════════════════════════════════
-function saveApiKey(val) {
-  try { localStorage.setItem('okos_gemini_key', val); } catch(e) {}
-}
-
-function loadApiKey() {
-  try {
-    const saved = localStorage.getItem('okos_gemini_key') || '';
-    const el = document.getElementById('geminiApiKey');
-    if (el && saved) el.value = saved;
-  } catch(e) {}
-}
-
-function toggleKeyVis() {
-  const el = document.getElementById('geminiApiKey');
-  const btn = document.getElementById('keyVisBtn');
-  if (!el) return;
-  if (el.type === 'password') { el.type = 'text'; btn.textContent = 'Hide'; }
-  else { el.type = 'password'; btn.textContent = 'Show'; }
-}
+// (no-op stubs kept so any stale references don't throw)
+function saveApiKey() {}
+function loadApiKey() {}
+function toggleKeyVis() {}
 
 async function generateWithGemini(type) {
-  const apiKey = document.getElementById('geminiApiKey')?.value?.trim() || localStorage.getItem('okos_gemini_key') || '';
-
-  if (!apiKey) {
-    showToast('No API key — enter your Gemini API key in the field above', 'error');
+  if (!window.Okos?.isReady?.()) {
+    showToast('Sign in to use AI generation', 'error');
     return;
   }
-
-  // Save key for future sessions
-  saveApiKey(apiKey);
 
   const clientName  = document.getElementById('clientName')?.value?.trim() || '[Client]';
   const projectCode = document.getElementById('projectCode')?.value?.trim() || '';
@@ -1030,22 +1322,27 @@ Write in third person. Be specific and technical but accessible. Do not use bull
   statusEl.style.display = 'block';
   statusEl.style.color = 'var(--foreground-muted)';
 
+  const GEMINI_MODEL = 'gemini-2.5-flash';
   const callGemini = async (prompt) => {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 2048 }
-        })
-      }
-    );
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
+    const { status, ok, data } = await window.Okos.gemini.generate({
+      model: GEMINI_MODEL,
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.4, maxOutputTokens: 2048 },
+    });
+    if (!ok) {
+      const message = data?.error?.message || data?.error || `Gemini proxy returned ${status}`;
+      window.Okos?.onAiFailed?.({ status, code: data?.error?.code, endpoint: 'gemini-proxy', message });
+      throw new Error(message);
+    }
+    if (data.error) {
+      window.Okos?.onAiFailed?.({ status, code: data?.error?.code, endpoint: 'gemini-proxy', message: data.error.message });
+      throw new Error(data.error.message);
+    }
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    if (!text) throw new Error('Empty response from Gemini');
+    if (!text) {
+      window.Okos?.onAiFailed?.({ status, code: 'empty', endpoint: 'gemini-proxy', message: 'Empty response from Gemini' });
+      throw new Error('Empty response from Gemini');
+    }
     return text.trim();
   };
 
@@ -1127,19 +1424,24 @@ Write strictly in third person — never use we, our, or us. Do not use bullet p
     statusEl.textContent = '\u2713 All 6 sections generated \u2014 review and edit as needed';
     statusEl.style.color = 'var(--foreground)';
     showToast('All sections generated successfully', 'success');
+    window.Okos?.onAiGenerated?.({
+      sections: ['execOverview','projectOverview','sysArch','techConsiderations','aiDependencies','aiConclusion'],
+      model: GEMINI_MODEL,
+    });
+    window.Okos?.saveSnapshotDebounced?.();
   } catch(err) {
     statusEl.textContent = '\u2717 Error: ' + err.message;
     statusEl.style.color = 'var(--error)';
     showToast('Gemini error: ' + err.message, 'error');
+    // onAiFailed already called inside callGemini for proxy failures; this catch handles any other unexpected error
   } finally {
     btn.disabled = false;
     btn.innerHTML = sparkleSvg + ' Auto-generate All Sections';
   }
 }
 
-// Load saved API key + render empty-state rows on page load
+// Render empty-state rows on page load
 window.addEventListener('DOMContentLoaded', () => {
-  loadApiKey();
   updateMatTableState();
 });
 // NAVIGATION
@@ -1361,6 +1663,13 @@ function handleBomFile(file) {
         status.style.display = 'block';
         document.getElementById('bomZone').classList.add('has-file');
         showToast('BOM imported — ' + filled.length + ' groups filled', 'success');
+        try {
+          window.Okos?.onBomImported?.({
+            filename: file?.name || 'BOM.xlsx',
+            itemCount: filled.length,
+            sheetNames: wb.SheetNames,
+          });
+        } catch(_) {}
       } else {
         status.innerHTML = `<span class="status-chip">No matching fields found — fill in manually</span>`;
         status.style.display = 'block';
@@ -1426,6 +1735,7 @@ function handleBomFile(file) {
 
     } catch(err) {
       showToast('Could not parse file: ' + err.message, 'error');
+      window.Okos?.onBomImportFailed?.({ filename: file?.name || 'BOM.xlsx', stage: 'parse', message: err.message });
     }
   };
   reader.readAsArrayBuffer(file);
@@ -1663,8 +1973,6 @@ function collectData() {
 // ═══════════════════════════════════════════════
 function buildChecklist() {
   const d = collectData();
-  const hasApiKey = !!(document.getElementById('geminiApiKey')?.value?.trim() || localStorage.getItem('okos_gemini_key') ||
-    (()=>{ try { return localStorage.getItem('okos_gemini_key'); } catch(e){ return ''; }})());
   const items = [
     { label: 'Client name',          ok: !!d.clientName,          val: d.clientName || 'Missing' },
     { label: 'Project code',         ok: !!d.projectCode,         val: d.projectCode || 'Missing' },
@@ -1678,7 +1986,6 @@ function buildChecklist() {
     { label: 'Okos scope items',     ok: d.okosScope.length > 0,  val: d.okosScope.length + ' items', warn: d.okosScope.length === 0 },
     { label: 'Okos materials',       ok: d.okosMats.length > 0,   val: d.okosMats.length + ' items',  warn: d.okosMats.length === 0 },
     { label: 'System drawings',      ok: d.drawings.length > 0,   val: d.drawings.length + ' uploaded', warn: true },
-    { label: 'Gemini API key',       ok: hasApiKey,               val: hasApiKey ? 'Saved' : 'Not set — AI generation unavailable', warn: true },
   ];
   const cl = document.getElementById('checklist');
   cl.innerHTML = items.map(item => `
@@ -1723,6 +2030,7 @@ async function generateProposal() {
     genBtn.disabled = false;
     genBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Generate Technical Proposal';
     showToast('Error: ' + err.message, 'error');
+    window.Okos?.onExportFailed?.({ stage: 'build', message: err.message });
     console.error(err);
   }
 }
@@ -2473,6 +2781,9 @@ function downloadDocx() {
   a.click();
   URL.revokeObjectURL(url);
   showToast('Download started!', 'success');
+  try {
+    window.Okos?.onExportSucceeded?.({ filename: generatedDocx.filename, sizeBytes: generatedDocx.blob.size });
+  } catch(_) {}
 }
 
 // ── TOAST ──
@@ -2489,5 +2800,8 @@ function resetAll() {
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 </script>
+
+<!-- Supabase + auth + history + Gemini proxy. Requires config.js (copy from config.example.js). -->
+<script type="module" src="./app.js"></script>
 </body>
 </html>
