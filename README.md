@@ -3,7 +3,7 @@
 Static single-page app that imports a BOM Excel file, fills out a 4-step wizard, and exports a DOCX technical proposal.
 
 Now backed by Supabase for:
-- Magic-link auth (single user, per-account)
+- Email sign-in link auth (single user, per-account)
 - Per-user proposal history (latest working state)
 - Append-only audit log (BOM imports, AI runs, exports, errors)
 - Server-side Gemini proxy (the API key never lives in the browser)
@@ -18,7 +18,7 @@ The UI follows Vercel's monochrome design language. The DOCX output still uses t
 |------|---------|
 | `index.html` | Single-page app. Wizard markup + existing wizard JS (inline `<script>`). Loads the module layer via `app.js`. |
 | `app.js` | ES module orchestrator. Initializes auth, mounts history view, exposes `window.Okos` for the inline wizard. |
-| `auth.js` | Magic-link login overlay, header signed-in indicator, sign-out, session listener. |
+| `auth.js` | Email sign-in link overlay, header signed-in indicator, sign-out, session listener. |
 | `db.js` | Supabase client + proposal/event CRUD + snapshot serializer / restorer. |
 | `gemini.js` | Client wrapper that POSTs to the Supabase `gemini-proxy` Edge Function with the user's JWT. |
 | `history.js` | History view (Proposals + Activity tabs with search, filters, pagination). |
@@ -71,7 +71,7 @@ In your Supabase project: **Authentication → URL Configuration**.
 - **Site URL:** the host where the tool is deployed (e.g. `https://tools.okos.ca`). For local dev: `http://localhost:8080` (or wherever you serve it).
 - **Redirect URLs:** add the same URL to the allowlist.
 
-Magic-link emails will direct users back to this URL with a session token in the URL fragment, which the Supabase client picks up automatically.
+Sign-in link emails will direct users back to this URL with a session token in the URL fragment, which the Supabase client picks up automatically.
 
 ### 5. Deploy the Gemini proxy Edge Function
 
@@ -105,7 +105,7 @@ python3 -m http.server 8080
 npx serve .
 ```
 
-Open the URL you configured in step 4, sign in with the magic link, and you're set.
+Open the URL you configured in step 4, sign in with the link from your inbox, and you're set.
 
 ---
 

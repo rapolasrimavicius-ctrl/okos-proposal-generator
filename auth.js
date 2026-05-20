@@ -1,4 +1,4 @@
-// auth.js — magic-link auth gate + header signed-in indicator.
+// auth.js — email-link auth gate + header signed-in indicator.
 
 import { initSupabase, getSupabase, setSession, getCurrentUser } from './db.js';
 
@@ -6,7 +6,7 @@ const LOGIN_HTML = `
   <div class="login-card">
     <div class="login-mark">Okos / <span>Proposal Generator</span></div>
     <h1 class="login-title">Sign in to Proposal Generator</h1>
-    <p class="login-sub">Enter your email and we'll send you a magic link.</p>
+    <p class="login-sub">Enter your email and we'll send you a sign-in link.</p>
     <form class="login-form" id="loginForm">
       <input type="email" id="loginEmail" placeholder="you@company.com" autocomplete="email" required>
       <button class="btn btn-primary" id="loginSubmit" type="submit" style="width:100%;justify-content:center;">
@@ -37,7 +37,7 @@ export async function startAuth({ onSignedIn, onSignedOut }) {
   const { data } = await supabase.auth.getSession();
   applySession(data.session);
 
-  // Listen for changes (magic-link redirect, sign-out, refresh)
+  // Listen for changes (sign-in redirect, sign-out, refresh)
   supabase.auth.onAuthStateChange((_event, session) => applySession(session));
 }
 
