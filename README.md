@@ -23,8 +23,8 @@ The UI follows Vercel's monochrome design language. The DOCX output still uses t
 | `gemini.js` | Client wrapper that POSTs to the Supabase `gemini-proxy` Edge Function with the user's JWT. |
 | `history.js` | History view (Proposals + Activity tabs with search, filters, pagination). |
 | `logger.js` | `logEvent({ level, type, message, context, proposalId })` → inserts into `events`. |
-| `config.example.js` | Template. Copy to `config.js` (gitignored) and fill in your project values. |
-| `config.js` | **Local only, gitignored.** Exports `SUPABASE_URL` and `SUPABASE_ANON_KEY`. |
+| `config.example.js` | Template for forks. Copy to `config.js` and fill in your project values. |
+| `config.js` | Exports `SUPABASE_URL` and `SUPABASE_ANON_KEY`. The publishable (anon) key is safe to commit — RLS protects the data. |
 | `migrations/001_init.sql` | Schema: `proposals`, `events`, RLS policies, `updated_at` trigger. |
 | `supabase/functions/gemini-proxy/index.ts` | Deno Edge Function — verifies the caller's JWT and forwards `generateContent` calls to Gemini using the server-held API key. |
 | `.gitignore` | `config.js`, OS noise, Supabase CLI state. |
@@ -57,7 +57,9 @@ This creates the `proposals` and `events` tables, the `updated_at` trigger, and 
 cp config.example.js config.js
 ```
 
-Edit `config.js` and paste in the project URL and anon key from step 1. **Do not commit this file** — it's already in `.gitignore`.
+Edit `config.js` and paste in the project URL and **publishable (anon) key** from step 1.
+
+You can commit this file — Supabase's publishable key is designed to be public, and Row Level Security gates what each user can read/write. Just be sure you're pasting the publishable key (`sb_publishable_...` or the legacy `anon` JWT), **never** the secret/service-role key.
 
 ### 4. Configure Supabase Auth redirects
 
