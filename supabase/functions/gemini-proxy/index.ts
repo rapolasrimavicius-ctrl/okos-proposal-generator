@@ -12,6 +12,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ALLOWED_MODELS = new Set(["gemini-2.5-flash", "gemini-2.5-pro"]);
 
+// Transient upstream statuses worth retrying. 429 = rate limit, 5xx = server errors.
+const RETRY_STATUSES = new Set([429, 500, 502, 503, 504]);
+const BACKOFFS_MS = [1500, 3500]; // wait before attempt 2, then before attempt 3
+
 const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN") ?? "*";
 const corsHeaders = {
   "Access-Control-Allow-Origin": allowedOrigin,
@@ -24,6 +28,28 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { ...corsHeaders, "content-type": "application/json" },
   });
+}
+
+// Retry transient failures with exponential backoff. Body is a string so it
+// can be safely re-sent on each attempt.
+async function fetchWithRetry(url: string, init: RequestInit): Promise<Response> {
+  let lastRes: Response | null = null;
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt <= BACKOFFS_MS.length; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, BACKOFFS_MS[attempt - 1]));
+    }
+    try {
+      lastRes = await fetch(url, init);
+      if (!RETRY_STATUSES.has(lastRes.status)) return lastRes;
+      console.warn(`gemini-proxy: upstream ${lastRes.status} on attempt ${attempt + 1}`);
+    } catch (err) {
+      lastErr = err;
+      console.warn(`gemini-proxy: fetch threw on attempt ${attempt + 1}:`, err);
+    }
+  }
+  if (lastRes) return lastRes;
+  throw lastErr ?? new Error("upstream_unreachable");
 }
 
 Deno.serve(async (req: Request) => {
@@ -64,8 +90,8 @@ Deno.serve(async (req: Request) => {
     if (body.generationConfig) forward.generationConfig = body.generationConfig;
     if (body.systemInstruction) forward.systemInstruction = body.systemInstruction;
 
-    // ── Forward to Gemini ──
-    const upstream = await fetch(
+    // ── Forward to Gemini (transparent retry on 429 / 5xx / network) ──
+    const upstream = await fetchWithRetry(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
       {
         method: "POST",

@@ -1406,45 +1406,61 @@ Write exactly 2 short professional paragraphs, maximum 120 words total. The conc
 
 Write strictly in third person — never use we, our, or us. Do not use bullet points. Do not include a heading. Output only the two paragraphs, nothing else.`;
 
+  // Skip sections that already have content \u2014 only regenerate empty ones.
+  // Lets users retry after a partial failure without overwriting good output.
+  const sections = [
+    ['execOverview',       'Executive Overview',         execPrompt],
+    ['projectOverview',    'Project Overview',           projectPrompt],
+    ['sysArch',            'System Architecture',        sysArchPrompt],
+    ['techConsiderations', 'Technical Considerations',   techPrompt],
+    ['aiDependencies',     'Dependencies',               depsPrompt],
+    ['aiConclusion',       'Conclusion',                 conclusionPrompt],
+  ];
+
+  const generated = [];
+  const skipped = [];
+
   try {
-    statusEl.textContent = 'Generating Executive Overview... (1/6)';
-    const execText = await callGemini(execPrompt);
-    document.getElementById('execOverview').value = execText;
+    let idx = 0;
+    for (const [id, label, prompt] of sections) {
+      idx++;
+      const el = document.getElementById(id);
+      const existing = (el?.value || '').trim();
+      if (existing) {
+        statusEl.textContent = `Keeping ${label} (${idx}/${sections.length})`;
+        skipped.push(id);
+        continue;
+      }
+      statusEl.textContent = `Generating ${label}... (${idx}/${sections.length})`;
+      const text = await callGemini(prompt);
+      el.value = text;
+      generated.push(id);
+    }
 
-    statusEl.textContent = 'Generating Project Overview... (2/6)';
-    const projectText = await callGemini(projectPrompt);
-    document.getElementById('projectOverview').value = projectText;
-
-    statusEl.textContent = 'Generating System Architecture... (3/6)';
-    const sysArchText = await callGemini(sysArchPrompt);
-    document.getElementById('sysArch').value = sysArchText;
-
-    statusEl.textContent = 'Generating Technical Considerations... (4/6)';
-    const techText = await callGemini(techPrompt);
-    document.getElementById('techConsiderations').value = techText;
-
-    statusEl.textContent = 'Generating Dependencies... (5/6)';
-    const depsText = await callGemini(depsPrompt);
-    document.getElementById('aiDependencies').value = depsText;
-
-    statusEl.textContent = 'Generating Conclusion... (6/6)';
-    const conclusionText = await callGemini(conclusionPrompt);
-    document.getElementById('aiConclusion').value = conclusionText;
-
-    statusEl.textContent = '\u2713 All 6 sections generated \u2014 review and edit as needed';
+    const newCount = generated.length;
+    const keptCount = skipped.length;
+    if (newCount > 0 && keptCount > 0) {
+      statusEl.textContent = `\u2713 Generated ${newCount} section${newCount === 1 ? '' : 's'}, kept ${keptCount}`;
+      showToast(`Generated ${newCount} new section${newCount === 1 ? '' : 's'} (kept ${keptCount} existing)`, 'success');
+    } else if (newCount > 0) {
+      statusEl.textContent = `\u2713 All ${newCount} sections generated \u2014 review and edit as needed`;
+      showToast('All sections generated successfully', 'success');
+    } else {
+      statusEl.textContent = `Nothing to generate \u2014 all ${keptCount} sections already filled. Clear a field to regenerate it.`;
+      showToast('All sections already filled', 'success');
+    }
     statusEl.style.color = 'var(--foreground)';
-    showToast('All sections generated successfully', 'success');
-    window.Okos?.onAiGenerated?.({
-      sections: ['execOverview','projectOverview','sysArch','techConsiderations','aiDependencies','aiConclusion'],
-      model: GEMINI_MODEL,
-    });
-    window.Okos?.saveSnapshotDebounced?.();
   } catch(err) {
     statusEl.textContent = '\u2717 Error: ' + err.message;
     statusEl.style.color = 'var(--error)';
     showToast('Gemini error: ' + err.message, 'error');
     // onAiFailed already called inside callGemini for proxy failures; this catch handles any other unexpected error
   } finally {
+    // Always log + save whatever was generated, even on partial failure.
+    if (generated.length > 0) {
+      window.Okos?.onAiGenerated?.({ sections: generated, model: GEMINI_MODEL });
+      window.Okos?.saveSnapshotDebounced?.();
+    }
     btn.disabled = false;
     btn.innerHTML = sparkleSvg + ' Auto-generate All Sections';
   }
