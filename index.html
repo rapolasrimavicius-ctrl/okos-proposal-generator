@@ -820,6 +820,82 @@
   .row-kebab:hover { background: var(--background-subtle); border-color: var(--border); color: var(--foreground); }
   .row-kebab svg { width: 14px; height: 14px; }
 
+  /* Row-action popover menu (opens from kebab) */
+  .row-menu {
+    position: absolute;
+    z-index: 600;
+    min-width: 140px;
+    background: var(--background-subtle);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .row-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    color: var(--foreground);
+    font-family: inherit;
+    font-size: 13px;
+    text-align: left;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
+  }
+  .row-menu button:hover { background: var(--background-hover); }
+  .row-menu .row-menu-danger:hover { color: var(--error); }
+  .row-menu svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+  /* Modal (custom confirm — replaces native window.confirm) */
+  .modal-scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    padding: 24px;
+  }
+  .modal-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--background-subtle);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    color: var(--foreground);
+    margin-bottom: 6px;
+  }
+  .modal-body {
+    font-size: 13px;
+    color: var(--foreground-muted);
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .btn-destructive {
+    background: var(--error);
+    color: #ffffff;
+    border-color: var(--error);
+  }
+  .btn-destructive:hover:not(:disabled) { background: #c53030; border-color: #c53030; }
+
   .hist-table-activity .hist-thead,
   .hist-table-activity .hist-row {
     grid-template-columns: 110px 60px 200px 1fr 1fr;

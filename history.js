@@ -119,17 +119,129 @@ async function drawProposalList() {
     });
   });
 
-  // Wire row actions (kebab → delete)
-  list.querySelectorAll('.hist-row-actions button').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
+  // Wire row actions (kebab → popover → delete confirm modal)
+  list.querySelectorAll('.row-kebab').forEach(btn => {
+    btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const id = btn.dataset.id;
-      if (!confirm('Delete this proposal? Activity history will be preserved.')) return;
+      const row = btn.closest('.hist-row');
+      const clientName = row?.querySelector('.hist-cell-client')?.textContent?.trim() || '';
+      openRowMenu(btn, [
+        {
+          label: 'Delete',
+          danger: true,
+          icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>',
+          onSelect: () => confirmDeleteProposal(id, clientName),
+        },
+      ]);
+    });
+  });
+}
+
+// ── Row popover menu ───────────────────────────────────────────────────
+
+function openRowMenu(anchor, items) {
+  closeRowMenu();
+  const menu = document.createElement('div');
+  menu.className = 'row-menu';
+  menu.id = 'rowMenu';
+  menu.innerHTML = items.map((it, i) => `
+    <button type="button" data-i="${i}" class="${it.danger ? 'row-menu-danger' : ''}">
+      ${it.icon || ''}<span>${escText(it.label)}</span>
+    </button>
+  `).join('');
+  document.body.appendChild(menu);
+
+  // Position the menu just below the kebab, right-aligned
+  const rect = anchor.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+  const top = rect.bottom + 4;
+  const left = Math.min(rect.right - menuRect.width, window.innerWidth - menuRect.width - 8);
+  menu.style.top = `${top}px`;
+  menu.style.left = `${Math.max(8, left)}px`;
+
+  menu.querySelectorAll('button[data-i]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const i = Number(btn.dataset.i);
+      closeRowMenu();
+      items[i]?.onSelect?.();
+    });
+  });
+
+  // Dismiss on outside click or Escape
+  setTimeout(() => {
+    document.addEventListener('click', onOutsideClick, { capture: true, once: false });
+    document.addEventListener('keydown', onMenuKeydown);
+  }, 0);
+}
+
+function onOutsideClick(e) {
+  if (!document.getElementById('rowMenu')?.contains(e.target)) closeRowMenu();
+}
+function onMenuKeydown(e) {
+  if (e.key === 'Escape') closeRowMenu();
+}
+function closeRowMenu() {
+  document.getElementById('rowMenu')?.remove();
+  document.removeEventListener('click', onOutsideClick, { capture: true });
+  document.removeEventListener('keydown', onMenuKeydown);
+}
+
+// ── Confirm modal (replaces native window.confirm) ────────────────────
+
+function showConfirm({ title, body, confirmLabel, danger, onConfirm }) {
+  closeRowMenu();
+  const scrim = document.createElement('div');
+  scrim.className = 'modal-scrim';
+  scrim.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-title">${escText(title)}</div>
+      <div class="modal-body">${escText(body)}</div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" type="button" data-act="cancel">Cancel</button>
+        <button class="btn ${danger ? 'btn-destructive' : 'btn-primary'}" type="button" data-act="confirm">${escText(confirmLabel || 'Confirm')}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(scrim);
+  const close = () => scrim.remove();
+  scrim.addEventListener('click', (e) => { if (e.target === scrim) close(); });
+  scrim.querySelector('[data-act="cancel"]').addEventListener('click', close);
+  scrim.querySelector('[data-act="confirm"]').addEventListener('click', async () => {
+    close();
+    await onConfirm?.();
+  });
+  // ESC to dismiss
+  const onKey = (e) => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); } };
+  document.addEventListener('keydown', onKey);
+  // Focus the destructive action so Enter is "Confirm"
+  setTimeout(() => scrim.querySelector('[data-act="confirm"]').focus(), 0);
+}
+
+function confirmDeleteProposal(id, clientName) {
+  showConfirm({
+    title: 'Delete proposal',
+    body: clientName
+      ? `Delete the proposal for ${clientName}? Activity history is preserved. This can't be undone.`
+      : "Delete this proposal? Activity history is preserved. This can't be undone.",
+    confirmLabel: 'Delete',
+    danger: true,
+    onConfirm: async () => {
       try {
         await deleteProposal(id);
         await drawProposalList();
-      } catch (err) { console.warn('delete failed', err); }
-    });
+      } catch (err) {
+        console.warn('delete failed', err);
+        showConfirm({
+          title: 'Delete failed',
+          body: err?.message || 'Could not delete the proposal. Try again.',
+          confirmLabel: 'OK',
+          danger: false,
+          onConfirm: () => {},
+        });
+      }
+    },
   });
 }
 

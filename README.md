@@ -45,11 +45,14 @@ You'll need:
 3. Wait for the project to provision.
 4. Note the project URL and anon key (Settings → API).
 
-### 2. Run the SQL migration
+### 2. Run the SQL migrations
 
-Open the SQL editor in your Supabase project → paste the contents of `migrations/001_init.sql` → Run.
+Open the SQL editor in your Supabase project. Run each migration in order:
 
-This creates the `proposals` and `events` tables, the `updated_at` trigger, and the RLS policies that keep every user's data isolated.
+1. **`migrations/001_init.sql`** — creates the `proposals` and `events` tables, the `updated_at` trigger, and the RLS policies that keep every user's data isolated.
+2. **`migrations/002_proposal_delete_policy.sql`** — adds the DELETE RLS policy on proposals (the initial migration only granted SELECT / INSERT / UPDATE, which silently broke the History delete kebab).
+
+Existing projects on 001 only: just run 002. Fresh projects: run both in order.
 
 ### 3. Create `config.js`
 

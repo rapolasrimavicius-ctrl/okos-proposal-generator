@@ -42,16 +42,24 @@ export async function startAuth({ onSignedIn, onSignedOut }) {
 }
 
 function applySession(session) {
+  // Was there a session BEFORE this call? Supabase fires onAuthStateChange
+  // for token refreshes too, and we don't want those to be treated as a
+  // fresh sign-in (which would reset the view and clear proposalId).
+  const wasAuthed = !!getCurrentUser();
   setSession(session);
   if (session) {
-    setBodyState('app');
+    if (!wasAuthed) {
+      // Real sign-in: move to the app view + fire the callback.
+      setBodyState('app');
+      _onSignedInCb?.(session.user);
+    }
+    // Always re-render the header (email may have changed after a refresh).
     renderHeaderUser();
-    _onSignedInCb?.(session.user);
   } else {
     resetLoginForm();
     setBodyState('login');
     renderHeaderUser();
-    _onSignedOutCb?.();
+    if (wasAuthed) _onSignedOutCb?.();
   }
 }
 
