@@ -55,6 +55,7 @@ function exposeApi() {
     ensureProposal,
     saveSnapshotDebounced,
     isReady: () => !!getCurrentUser(),
+    flushSnapshot: () => saveSnapshotNow({ force: true }),
   };
 }
 
@@ -92,10 +93,13 @@ function saveSnapshotDebounced() {
   state.saveTimer = setTimeout(saveSnapshotNow, 800);
 }
 
-async function saveSnapshotNow() {
+async function saveSnapshotNow(opts = {}) {
+  const { force = false } = opts;
   if (!getCurrentUser()) return;
-  if (!state.dirty) return;
-  const id = await ensureProposal('autosave');
+  if (!state.dirty && !force) return;
+  // Cancel any pending debounced save so we don't double-write.
+  if (state.saveTimer) { clearTimeout(state.saveTimer); state.saveTimer = null; }
+  const id = await ensureProposal(force ? 'flush' : 'autosave');
   if (!id) return;
   state.dirty = false;
   try {
@@ -119,7 +123,7 @@ async function saveSnapshotNow() {
 
 async function onBomImported({ filename, itemCount, sheetNames }) {
   const id = await ensureProposal('bom_import');
-  await saveSnapshotNow(); // immediate save once the BOM lands
+  await saveSnapshotNow({ force: true }); // immediate save once the BOM lands
   logEvent({
     level: 'info', type: 'bom.imported',
     message: `BOM imported: ${filename}`,
@@ -165,7 +169,7 @@ async function onExportSucceeded({ filename, sizeBytes }) {
       logEvent({ level: 'warn', type: 'warn.persistence', message: err?.message || 'markExported failed', context: { operation: 'update', table: 'proposals' } });
     }
   }
-  await saveSnapshotNow();
+  await saveSnapshotNow({ force: true });
   logEvent({
     level: 'info', type: 'proposal.exported',
     message: `Exported ${filename}`,

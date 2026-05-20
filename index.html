@@ -801,8 +801,9 @@
   .hist-cell { font-size: 13px; color: var(--foreground); overflow: hidden; text-overflow: ellipsis; }
   .hist-cell-client { color: var(--foreground); }
   .hist-cell-code { font-family: var(--font-mono); color: var(--foreground-muted); font-size: 12px; }
-  .hist-row-actions { display: flex; justify-content: flex-end; opacity: 0; transition: opacity 120ms ease; }
+  .hist-row-actions { display: flex; justify-content: flex-end; opacity: 0.5; transition: opacity 120ms ease; }
   .hist-row:hover .hist-row-actions { opacity: 1; }
+  .hist-row-actions:focus-within { opacity: 1; }
   .row-kebab {
     width: 28px; height: 28px;
     background: transparent;
@@ -1457,9 +1458,11 @@ Write strictly in third person — never use we, our, or us. Do not use bullet p
     // onAiFailed already called inside callGemini for proxy failures; this catch handles any other unexpected error
   } finally {
     // Always log + save whatever was generated, even on partial failure.
+    // Use flushSnapshot (immediate) instead of the 800ms debounce so AI
+    // content is durable the moment generation completes.
     if (generated.length > 0) {
       window.Okos?.onAiGenerated?.({ sections: generated, model: GEMINI_MODEL });
-      window.Okos?.saveSnapshotDebounced?.();
+      window.Okos?.flushSnapshot?.();
     }
     btn.disabled = false;
     btn.innerHTML = sparkleSvg + ' Auto-generate All Sections';
