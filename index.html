@@ -2249,15 +2249,57 @@ function inlineImage(rId, widthEmu, heightEmu, idx) {
   </w:drawing></w:r></w:p>`;
 }
 
+// Convert an SVG string to a PNG ArrayBuffer at the requested pixel size.
+// Used for the cover-page logo. Browsers handle SVG decoding via <img>,
+// then we draw into a canvas at high resolution and read back PNG bytes.
+function svgToPng(svgText, w, h) {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([svgText], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(async (pngBlob) => {
+          if (!pngBlob) return reject(new Error('canvas.toBlob returned null'));
+          resolve(await pngBlob.arrayBuffer());
+        }, 'image/png');
+      } catch (e) { URL.revokeObjectURL(url); reject(e); }
+    };
+    img.onerror = (e) => { URL.revokeObjectURL(url); reject(new Error('SVG image load failed')); };
+    img.src = url;
+  });
+}
+
 // ═══════════════════════════════════════════════
 // DOCX BUILDER
 // ═══════════════════════════════════════════════
 async function buildDocx(data) {
   const zip = new JSZip();
 
-  // The new editorial cover uses a text wordmark, not a logo image, so we no
-  // longer fetch or embed logo-white.png. (See generateProposal — the upstream
-  // fetch was removed too.)
+  // ── Cover logo: fetch okos-logo.svg + rasterize to PNG via canvas ──
+  // Word/Pages render embedded PNGs reliably; SVG support in DOCX is
+  // patchy across versions and apps, so we rasterize at 4× to keep edges
+  // crisp on retina displays and print.
+  let logoRId = null;
+  try {
+    const svgRes = await fetch('./okos-logo.svg');
+    if (svgRes.ok) {
+      const svgText = await svgRes.text();
+      const pngBuf = await svgToPng(svgText, 1418 * 2, 455 * 2); // 2× the natural viewBox
+      logoRId = 'rId10';
+      zip.file('word/media/okos-logo.png', pngBuf);
+    }
+  } catch (err) {
+    console.warn('Logo embed failed, falling back to text wordmark:', err);
+  }
 
   // ── Relationships ──
   const rels = [];
@@ -2270,6 +2312,10 @@ async function buildDocx(data) {
   staticRels.forEach(([id,type,target]) => {
     rels.push(`<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/${type}" Target="${target}"/>`);
   });
+
+  if (logoRId) {
+    rels.push(`<Relationship Id="${logoRId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/okos-logo.png"/>`);
+  }
 
   // Drawing images
   const drawingRIds = [];
@@ -2311,14 +2357,42 @@ ${rels.join('\n')}
     ? `Technical Proposal prepared for ${_clientName}`
     : `Technical Proposal · ${_date}`;
 
-  // ── 1. Okos wordmark (Calibri 26pt semibold, navy, 1.5" gap below) ──
-  // 1.5" = 2160 twips of after-spacing
-  body += `<w:p><w:pPr><w:spacing w:before="0" w:after="2160"/></w:pPr>
-    <w:r><w:rPr>
-      <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:b/>
-      <w:sz w:val="52"/><w:szCs w:val="52"/>
-      <w:color w:val="0F1B2D"/>
-    </w:rPr><w:t>Okos</w:t></w:r></w:p>`;
+  // ── 1. Okos logo (SVG rasterized to PNG; 1.5" gap below) ──
+  // Logo: 1418×455 viewBox (aspect 3.117:1). Render at ~32pt tall.
+  // 32pt = 406400 EMU; width = 406400 × 1418 / 455 ≈ 1266676 EMU.
+  // 1.5" = 2160 twips of after-spacing below the logo paragraph.
+  const LOGO_H_EMU = 406400;
+  const LOGO_W_EMU = Math.round(LOGO_H_EMU * 1418 / 455);
+  if (logoRId) {
+    body += `<w:p><w:pPr><w:spacing w:before="0" w:after="2160"/></w:pPr>
+      <w:r><w:drawing>
+        <wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+          <wp:extent cx="${LOGO_W_EMU}" cy="${LOGO_H_EMU}"/>
+          <wp:effectExtent t="0" r="0" b="0" l="0"/>
+          <wp:docPr id="1" name="Okos logo"/>
+          <wp:cNvGraphicFramePr>
+            <a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/>
+          </wp:cNvGraphicFramePr>
+          <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+            <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+              <pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                <pic:nvPicPr><pic:cNvPr id="0" name="okos-logo"/><pic:cNvPicPr><a:picLocks noChangeAspect="1" noChangeArrowheads="1"/></pic:cNvPicPr></pic:nvPicPr>
+                <pic:blipFill><a:blip r:embed="${logoRId}"/><a:srcRect/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>
+                <pic:spPr bwMode="auto"><a:xfrm><a:off x="0" y="0"/><a:ext cx="${LOGO_W_EMU}" cy="${LOGO_H_EMU}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>
+              </pic:pic>
+            </a:graphicData>
+          </a:graphic>
+        </wp:inline>
+      </w:drawing></w:r></w:p>`;
+  } else {
+    // Fallback if the logo fetch/conversion failed: use text wordmark.
+    body += `<w:p><w:pPr><w:spacing w:before="0" w:after="2160"/></w:pPr>
+      <w:r><w:rPr>
+        <w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/><w:b/>
+        <w:sz w:val="52"/><w:szCs w:val="52"/>
+        <w:color w:val="0F1B2D"/>
+      </w:rPr><w:t>Okos</w:t></w:r></w:p>`;
+  }
 
   // ── 2. Hero title (Calibri 32pt semibold, navy, line-height 1.1) ──
   body += `<w:p><w:pPr>
@@ -2358,15 +2432,13 @@ ${rels.join('\n')}
   const noBorders = ['top','left','bottom','right','insideH','insideV']
     .map(s=>`<w:${s} w:val="none" w:sz="0" w:color="auto"/>`).join('');
 
-  // Cell builder: small uppercase label + value paragraph
+  // Cell builder: small uppercase label + value paragraph (all Calibri now)
   const metaCell = (label, value, opts={}) => {
-    const { mono = false, bottomPad = 0, isLeft = false, isRight = false } = opts;
+    const { bottomPad = 0, isLeft = false, isRight = false } = opts;
     const leftPad  = isLeft  ? META_PAD_OUTER : META_PAD_INNER;
     const rightPad = isRight ? META_PAD_OUTER : META_PAD_INNER;
-    const valueFont = mono
-      ? `<w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:cs="Consolas"/>`
-      : `<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>`;
-    const valueSize = mono ? 24 : 28; // 12pt mono vs 14pt sans
+    const valueFont = `<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>`;
+    const valueSize = 28; // 14pt
     return `<w:tc><w:tcPr>
         <w:tcW w:w="${META_COL}" w:type="dxa"/>
         <w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="none" w:sz="0" w:color="auto"/>`).join('')}</w:tcBorders>
@@ -2409,7 +2481,7 @@ ${rels.join('\n')}
   </w:tr>
   <w:tr>
     ${metaCell('Date',         _date,        { isLeft: true })}
-    ${metaCell('Project code', _projectCode, { isRight: true, mono: true })}
+    ${metaCell('Project code', _projectCode, { isRight: true })}
   </w:tr>
   </w:tbl>`;
 
