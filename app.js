@@ -210,12 +210,22 @@ function attachWizardListeners() {
 
 function mountHistoryToggle() {
   const handler = () => {
-    const link = document.getElementById('headerHistoryLink');
-    if (!link) return;
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (state.view === 'history') showWizard();
-      else showHistory();
+    // History link in the sidebar (Option A — sits below the stepper)
+    const link = document.getElementById('sidebarHistoryLink');
+    if (link) {
+      const open = (e) => { e.preventDefault(); showHistory(); };
+      link.addEventListener('click', open);
+      link.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') open(e);
+      });
+    }
+
+    // When in history view, clicking any numbered stepper item returns to
+    // the wizard. The inline onclick="goTo(N)" already activates that step.
+    document.querySelectorAll('.step-list .step-item:not(.sidebar-link)').forEach(item => {
+      item.addEventListener('click', () => {
+        if (state.view === 'history') showWizard();
+      });
     });
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', handler);
@@ -244,14 +254,24 @@ function showHistory() {
   } else {
     refreshHistory();
   }
-  document.getElementById('headerHistoryLink')?.classList.add('active');
+  // Reflect active state in the sidebar
+  document.querySelectorAll('.step-list .step-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('sidebarHistoryLink')?.classList.add('active');
+  window.scrollTo(0, 0);
 }
 
 function showWizard() {
   state.view = 'wizard';
   document.body.classList.remove('app-state-history');
   document.body.classList.add('app-state-app');
-  document.getElementById('headerHistoryLink')?.classList.remove('active');
+  document.getElementById('sidebarHistoryLink')?.classList.remove('active');
+  // Re-assert the active step on the sidebar based on which wizard panel is active.
+  const activePanel = document.querySelector('.panel.active');
+  const m = activePanel?.id?.match(/panel-(\d+)/);
+  const step = m ? parseInt(m[1], 10) : 0;
+  document.querySelectorAll('.step-list .step-item:not(.sidebar-link)').forEach((s, i) => {
+    s.classList.toggle('active', i === step);
+  });
 }
 
 // ── Toast ───────────────────────────────────────────────────────────────

@@ -25,12 +25,6 @@ export function mountHistory({ container, onOpenProposal, onBack }) {
   _onBackToWizard = onBack;
 
   container.innerHTML = `
-    <div class="hist-topbar">
-      <button class="hist-back" id="histBack" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        Back to proposal
-      </button>
-    </div>
     <div class="hist-tabs">
       <button class="hist-tab active" data-tab="proposals" type="button">Proposals</button>
       <button class="hist-tab" data-tab="activity" type="button">Activity</button>
@@ -38,7 +32,6 @@ export function mountHistory({ container, onOpenProposal, onBack }) {
     <div class="hist-body" id="histBody"></div>
   `;
 
-  container.querySelector('#histBack').addEventListener('click', () => _onBackToWizard?.());
   container.querySelectorAll('.hist-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       state.tab = btn.dataset.tab;

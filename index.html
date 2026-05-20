@@ -161,6 +161,24 @@
     border-color: var(--border-strong);
     color: var(--foreground);
   }
+
+  /* Sidebar secondary nav (History) */
+  .sidebar-divider {
+    margin: 16px 8px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .step-num-icon { /* shown in place of a number, e.g. for History */
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--foreground-muted);
+  }
+  .step-num-icon svg { width: 12px; height: 12px; }
+  .sidebar-link.active .step-num-icon {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+
   .step-info { flex: 1; min-width: 0; }
   .step-label { font-size: 13px; font-weight: 500; color: var(--foreground); letter-spacing: -0.005em; }
   .step-desc { font-size: 12px; color: var(--foreground-muted); margin-top: 2px; }
@@ -608,15 +626,6 @@
 
   /* ── HEADER RIGHT — user slot + history link + badge ── */
   .header-right { display: flex; align-items: center; gap: 16px; }
-  .header-link {
-    font-size: 13px;
-    color: var(--foreground-muted);
-    text-decoration: none;
-    transition: color 120ms ease;
-    cursor: pointer;
-  }
-  .header-link:hover { color: var(--foreground); text-decoration: none; }
-  .header-link.active { color: var(--foreground); }
   .header-user { display: flex; align-items: center; gap: 8px; }
   .header-user .user-email {
     font-size: 12px;
@@ -641,20 +650,19 @@
   }
   .header-user .user-signout:hover { color: var(--foreground); text-decoration-color: var(--foreground); }
 
-  /* ── APP STATE VISIBILITY ── */
+  /* ── APP STATE VISIBILITY ──
+     The sidebar stays visible across wizard + history; only the main
+     content area swaps between .main (wizard panels) and .history-wrap. */
   body.app-state-loading .header,
-  body.app-state-loading .app,
-  body.app-state-loading .history-wrap { display: none; }
+  body.app-state-loading .app { display: none; }
   body.app-state-login .header,
-  body.app-state-login .app,
-  body.app-state-login .history-wrap { display: none; }
+  body.app-state-login .app { display: none; }
   body.app-state-login #loginOverlay { display: flex; }
   body.app-state-app #loginOverlay,
   body.app-state-history #loginOverlay { display: none; }
   body.app-state-app .history-wrap { display: none; }
-  body.app-state-history .app { display: none; }
+  body.app-state-history .main { display: none; }
   body.app-state-history .history-wrap { display: block; }
-  body:not(.app-state-history) .history-wrap { display: none; }
 
   /* ── LOGIN OVERLAY ── */
   .login-overlay {
@@ -708,30 +716,13 @@
   }
   .login-sent strong { color: var(--foreground); font-weight: 500; }
 
-  /* ── HISTORY VIEW ── */
+  /* ── HISTORY VIEW ──
+     Sits inside .app as a flex sibling of .main when in history state. */
   .history-wrap {
-    max-width: 1180px;
-    margin: 0 auto;
-    width: 100%;
-    padding: 24px 32px 80px;
+    flex: 1;
+    min-width: 0;
+    max-width: 960px;
   }
-  .hist-topbar { margin-bottom: 24px; }
-  .hist-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    border: none;
-    color: var(--foreground-muted);
-    font-size: 13px;
-    font-family: inherit;
-    cursor: pointer;
-    padding: 0;
-    transition: color 120ms ease;
-  }
-  .hist-back:hover { color: var(--foreground); }
-  .hist-back svg { width: 14px; height: 14px; }
-
   .hist-tabs {
     display: flex;
     gap: 24px;
@@ -917,7 +908,9 @@
     .app { flex-direction: column; gap: 32px; padding: 24px 20px; }
     .sidebar { width: 100%; position: static; }
     .step-list { flex-direction: row; flex-wrap: wrap; }
-    .step-item { flex: 1 1 calc(50% - 4px); min-width: 0; }
+    .step-item { flex: 1 1 calc(50% - 4px); min-width: 0; margin: 0; }
+    .sidebar-divider { display: none; }
+    .history-wrap { max-width: 100%; }
     .form-grid { grid-template-columns: 1fr; }
     .mat-header, .mat-row { font-size: 11px; }
     .header-right { gap: 10px; }
@@ -938,7 +931,6 @@
     <span class="logo-sub">Proposal Generator</span>
   </div>
   <div class="header-right">
-    <a class="header-link" id="headerHistoryLink" href="#" role="button">History</a>
     <div class="header-user" id="headerUserSlot"></div>
     <span class="header-badge">Technical Proposal</span>
   </div>
@@ -974,6 +966,24 @@
         <div class="step-info">
           <div class="step-label">Generate</div>
           <div class="step-desc">Build & download DOCX</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="step-list">
+      <div class="step-item sidebar-link" id="sidebarHistoryLink" role="button" tabindex="0">
+        <div class="step-num step-num-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v5h5"/>
+            <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
+            <path d="M12 7v5l4 2"/>
+          </svg>
+        </div>
+        <div class="step-info">
+          <div class="step-label">History</div>
+          <div class="step-desc">All proposals &amp; activity</div>
         </div>
       </div>
     </div>
@@ -1225,10 +1235,10 @@
     </div>
 
   </main>
-</div>
 
-<!-- History view (mounted by app.js when active) -->
-<div class="history-wrap" id="historyView"></div>
+  <!-- History view (mounted by app.js when active) -->
+  <div class="history-wrap" id="historyView"></div>
+</div>
 
 <div class="toast" id="toast"></div>
 
